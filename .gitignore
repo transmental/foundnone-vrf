@@ -1,0 +1,15 @@
+node_modules
+
+.env
+
+commitment.json
+
+contracts/test/zk
+contracts/artifacts
+contracts/cache
+contracts/ignition/deployments
+
+circom/build
+*.ptau
+
+*.wtns

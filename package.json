@@ -1,0 +1,16 @@
+{
+  "name": "vrf-zk-base",
+  "version": "1.0.0",
+  "description": "Generate .ptau file:  ```bash snarkjs powersoftau new bn128 12 pot12_0000.ptau ``` Contribute to the ceremony:  ```bash snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau --name=\"First contribution\" -v ``` Finalize:  ```bash cp pot12_0001.ptau pot12_final.ptau ```",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.7.5"
+  }
+}
