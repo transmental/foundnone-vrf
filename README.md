@@ -49,6 +49,14 @@ Call the `requestRng` function on the `FoundnoneVRF` contract. This will emit a 
 
 Poll the contract for entropies[_requestId] or listen for the `RequestFulfilled` event for your request ID. The entropy will be available in the `event.publicInputs[1]` field.
 
+## Run the POC Frontend
+
+```bash
+cd poc-frontend
+npm i
+npm run dev
+```
+
 # Key Features
 
 - **Open Fulfillment**: Anyone can run a fulfiller to process VRF requests and earn rewards.
