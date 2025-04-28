@@ -49,7 +49,7 @@ func Run(input CircuitInput) ([24]*big.Int, [3]*big.Int, error) {
 
 	// 4) parse proof (first 24) and public (last 3) with base=0
 	var proof [24]*big.Int
-	for i := 0; i < 24; i++ {
+	for i := range 24 {
 		v := new(big.Int)
 		if _, ok := v.SetString(result.Calldata[i], 0); !ok {
 			return zeroProof, zeroPub, fmt.Errorf("invalid proof element %d: %s", i, result.Calldata[i])
@@ -58,7 +58,7 @@ func Run(input CircuitInput) ([24]*big.Int, [3]*big.Int, error) {
 	}
 
 	var pub [3]*big.Int
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		v := new(big.Int)
 		if _, ok := v.SetString(result.Calldata[24+i], 0); !ok {
 			return zeroProof, zeroPub, fmt.Errorf("invalid public input %d: %s", i, result.Calldata[24+i])
