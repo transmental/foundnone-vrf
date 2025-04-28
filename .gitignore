@@ -13,3 +13,5 @@ circom/build
 *.ptau
 
 *.wtns
+
+*coverage*

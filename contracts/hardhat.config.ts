@@ -3,7 +3,9 @@ import "@nomicfoundation/hardhat-ignition";
 import "@nomicfoundation/hardhat-verify";
 import "dotenv/config";
 import "@nomicfoundation/hardhat-viem";
+import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   networks: {

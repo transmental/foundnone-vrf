@@ -2,10 +2,10 @@ pragma circom 2.1.4;
 include "../node_modules/circomlib/circuits/poseidon.circom";
 
 template GenProof() {
-    // **private witness**
+    // **private**
     signal input secret;
 
-    // **public inputs**
+    // **public**
     signal input seed;
     signal input entropy;
     signal input commitment;

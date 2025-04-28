@@ -1,4 +1,4 @@
-module entropy-listener
+module foundnone-vrf
 
 go 1.23.0
 

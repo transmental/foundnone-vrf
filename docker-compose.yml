@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  foundnone-vrf-fulfiller:
+    image: foundnone-vrf-fulfiller
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - fulfiller/.env
+    restart: unless-stopped

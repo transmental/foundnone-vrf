@@ -30,7 +30,23 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      */
     mapping(uint256 => uint256) public entropies;
 
+    /**
+     * @notice A mapping to track the block number when a request was made
+     * @dev This is used to ensure that the seed is valid and that the request is not spoofed
+     */
     mapping(uint256 => uint256) public requestBlockSet;
+
+    /**
+     * @notice A mapping to track the requesting address of each request
+     * @dev Allows the contract to refund request fees if the request is not fulfilled
+     */
+    mapping(uint256 => address) public requesters;
+
+    /**
+     * @notice The request fee paid
+     * @dev This is used to track the fee paid for each request
+     */
+    mapping(uint256 => uint256) public requestFeePaid;
 
     /**
      * @notice The next requestId to be used
@@ -62,6 +78,12 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     mapping(address => uint256) public commitments;
 
     /**
+     * @notice A mapping to track if a commitment is in use
+     * @dev Ensures that two fulfillers cannot use the same commitment at the same time
+     */
+    mapping(uint256 => bool) public commitmentInUse;
+
+    /**
      * @notice A mapping to track the block number when a commitment was set
      * @dev This is used to ensure that fulfillers are only using commitments on requests that are made after the commitment is set
      */
@@ -79,7 +101,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param proof The proof data
      * @param publicInputs The public inputs of the proof
      */
-    event EntropyStored(
+    event RequestFulfilled(
         uint256 indexed requestId,
         address rewardReceiver,
         uint256[24] proof,
@@ -92,7 +114,12 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param requester The address of the requester
      * @param feePaid The fee paid for the request
      */
-    event VrfRequested(uint256 requestId, address requester, uint256 feePaid);
+    event RngRequested(
+        uint256 requestId,
+        bytes32 blockHash,
+        address requester,
+        uint256 feePaid
+    );
 
     /**
      * @notice Event emitted when the contract fee balance is withdrawn
@@ -105,7 +132,10 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param rewardReceiver The address of the reward receiver
      * @param amount The amount withdrawn
      */
-    event RewardReceiverBalanceWithdrawn(address indexed rewardReceiver, uint256 amount);
+    event RewardReceiverBalanceWithdrawn(
+        address indexed rewardReceiver,
+        uint256 amount
+    );
 
     /**
      * @notice Event emitted when the request fee is updated
@@ -124,13 +154,15 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     error InvalidProof();
     error InvalidCommitment();
     error CommitmentAlreadySet();
-    error InvalidSeed();
+    error InvalidSeedOrBlockHashUnavailable();
     error InvalidCommitmentBlock();
-    error DuplicateCommitment();
     error InsufficientFee();
     error RequestNotFulfilled();
-    error InvalidPercentage();
+    error InvalidFeePercentage();
     error InsufficientBalance();
+    error RequestStillValid();
+    error InvalidRequester();
+    error CommitmentInUse();
 
     /**
      * @notice The constructor for the contract
@@ -148,26 +180,18 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param _publicInputs The public inputs of the proof
      * @param _requestId The requestId of the request
      * @param _rewardReceiver The address to receive the reward
-     * @param _nextCommitment The next commitment of the fulfiller
      */
     function submitEntropy(
         uint256[24] calldata _proof,
         uint256[3] calldata _publicInputs,
         uint256 _requestId,
-        address _rewardReceiver,
-        uint256 _nextCommitment
+        address _rewardReceiver
     ) external {
-        if (commitments[msg.sender] == _nextCommitment) {
-            revert DuplicateCommitment();
-        }
         // verify the proof
         _verifyProof(_proof, _publicInputs, _requestId);
 
         // store the entropy
         entropies[_requestId] = _publicInputs[1];
-    
-        commitments[msg.sender] = _nextCommitment;
-        commitmentBlockSet[msg.sender] = block.number;
 
         // calculate the fee
         uint256 fee = (requestFee * contractFeePercentage) / 100;
@@ -177,7 +201,12 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         rewardReceiverBalance[_rewardReceiver] += requestFee - fee;
 
         // emit the event
-        emit EntropyStored(_requestId, _rewardReceiver, _proof, _publicInputs);
+        emit RequestFulfilled(
+            _requestId,
+            _rewardReceiver,
+            _proof,
+            _publicInputs
+        );
     }
 
     /**
@@ -195,7 +224,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         uint256[3] calldata _publicInputs,
         uint256 _requestId
     ) internal view {
-        if (_requestId > nextRequestId) {
+        if (_requestId >= nextRequestId) {
             revert InvalidRequestId();
         }
         if (entropies[_requestId] != 0) {
@@ -207,13 +236,20 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         if (commitmentBlockSet[msg.sender] > requestBlockSet[_requestId]) {
             revert InvalidCommitmentBlock();
         }
+        // since the blockhash is only available for the last 256 blocks, this fulfillment is inherently invalid if the request is older than 256 blocks
         uint256 _seedHash = uint256(
-            keccak256(abi.encodePacked(_requestId, requestBlockSet[_requestId]))
+            keccak256(
+                abi.encodePacked(
+                    _requestId,
+                    requestBlockSet[_requestId],
+                    blockhash(requestBlockSet[_requestId])
+                )
+            )
         );
         // q is inherited from the PlonkVerifier contract and is the maximum value of the field
         uint256 _fieldHash = _seedHash % q;
         if (_publicInputs[0] != _fieldHash) {
-            revert InvalidSeed();
+            revert InvalidSeedOrBlockHashUnavailable();
         }
         if (!this.verifyProof(_proof, _publicInputs)) {
             revert InvalidProof();
@@ -222,13 +258,23 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
 
     /**
      * @param _commitment The commitment to be set
+     * @dev This function is used to set the commitment for the fulfiller
+     * @dev The commitment is a hash of a secret that the fulfiller must use when generating the next entropy
+     * @dev This is used to ensure that fulfillers are not able to spoof entropies
+     * @dev The commitment is used as a public input to the PlonkVerifier and is used to verify the proof
+     * @dev We also store the block number when the commitment was set to ensure that the commitment is only used on requests that are made after the commitment is set
      */
-    function setCommitment(uint256 _commitment) external {
-        if (commitments[msg.sender] == _commitment) {
-            revert DuplicateCommitment();
+    function setCommitment(uint256 _commitment) public {
+        if (commitmentInUse[_commitment]) {
+            revert CommitmentInUse();
+        }
+        // unset the previous commitment
+        if (commitments[msg.sender] != 0) {
+            commitmentInUse[commitments[msg.sender]] = false;
         }
         commitments[msg.sender] = _commitment;
         commitmentBlockSet[msg.sender] = block.number;
+        commitmentInUse[_commitment] = true;
     }
 
     /**
@@ -260,13 +306,45 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     /**
      * @notice A function to request a new entropy
      * @dev The fee is paid in ether and is required to be sent with the request
+     * @dev We subtract 1 from the block to ensure a fulfillment is valid within the same block as the request.
      */
     function requestRng() external payable {
         if (msg.value < requestFee) {
             revert InsufficientFee();
         }
-        requestBlockSet[nextRequestId] = block.number;
-        emit VrfRequested(nextRequestId++, msg.sender, msg.value);
+        requestBlockSet[nextRequestId] = block.number - 1;
+        requesters[nextRequestId] = msg.sender;
+        requestFeePaid[nextRequestId] = msg.value;
+        emit RngRequested(
+            nextRequestId++,
+            blockhash(block.number - 1),
+            msg.sender,
+            msg.value
+        );
+    }
+
+    /**
+     *
+     * @param _requestId The requestId of the request
+     * @dev This function is used to refund the request fee if the request is not fulfilled
+     * @dev The requestId must be valid and the request must not have been fulfilled yet
+     * @dev The blockhash of the request must be 0 to ensure that the request is not valid anymore
+     * @dev The request fee is refunded to the requester (including the contract fee because it is not taken until fulfillment)
+     */
+    function refundUnfulfilledRequest(uint256 _requestId) external {
+        if (entropies[_requestId] != 0) {
+            revert RequestAlreadyFulfilled();
+        }
+        if (requestBlockSet[_requestId] == 0) {
+            revert InvalidRequestId();
+        }
+        if (blockhash(requestBlockSet[_requestId]) != 0) {
+            revert RequestStillValid();
+        }
+        if (requesters[_requestId] != msg.sender) {
+            revert InvalidRequester();
+        }
+        payable(msg.sender).transfer(requestFeePaid[_requestId]);
     }
 
     /**
@@ -295,10 +373,11 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @notice A function to withdraw the contract fee balance
      * @dev This function can only be called by the admin role
      */
-    function withdraw() external onlyRole(ADMIN_ROLE) {
-        payable(msg.sender).transfer(address(this).balance);
+    function withdrawContractFees() external onlyRole(ADMIN_ROLE) {
+        uint256 balanceToWithdraw = contractFeeBalance;
+        payable(msg.sender).transfer(balanceToWithdraw);
         contractFeeBalance = 0;
-        emit ContractFeesWithdrawn(address(this).balance);
+        emit ContractFeesWithdrawn(balanceToWithdraw);
     }
 
     /**
@@ -309,7 +388,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         uint256 _newPercentage
     ) external onlyRole(ADMIN_ROLE) {
         if (_newPercentage > 20) {
-            revert InvalidPercentage();
+            revert InvalidFeePercentage();
         }
         contractFeePercentage = _newPercentage;
         emit ContractFeePercentageUpdated(_newPercentage);

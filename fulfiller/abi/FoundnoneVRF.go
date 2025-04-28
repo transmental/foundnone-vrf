@@ -31,7 +31,7 @@ var (
 
 // FoundnoneVRFMetaData contains all meta data concerning the FoundnoneVRF contract.
 var FoundnoneVRFMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_adminRole\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CommitmentAlreadySet\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCommitment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCommitmentBlock\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidProof\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidRequestId\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSeed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RequestAlreadyFulfilled\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"ContractFeePercentageUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ContractFeesWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"fulfiller\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"seed\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"entropy\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256[24]\",\"name\":\"_proof\",\"type\":\"uint256[24]\"}],\"name\":\"EntropyStored\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"fulfiller\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"FulfillerBalanceWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newFee\",\"type\":\"uint256\"}],\"name\":\"RequestFeeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"requester\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"feePaid\",\"type\":\"uint256\"}],\"name\":\"VrfRequested\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"commitmentBlockSet\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"commitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractFeeBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractFeePercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"entropies\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"fulfillerBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getEntropy\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_fulfiller\",\"type\":\"address\"}],\"name\":\"getFulfillerBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nextRequestId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"requestBlockSet\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestVrf\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_commitment\",\"type\":\"uint256\"}],\"name\":\"setCommitment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newPercentage\",\"type\":\"uint256\"}],\"name\":\"setContractFeePercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newFee\",\"type\":\"uint256\"}],\"name\":\"setRequestFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[24]\",\"name\":\"_proof\",\"type\":\"uint256[24]\"},{\"internalType\":\"uint256[3]\",\"name\":\"_publicInputs\",\"type\":\"uint256[3]\"},{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_fulfiller\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_nextCommitment\",\"type\":\"uint256\"}],\"name\":\"submitEntropy\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[24]\",\"name\":\"_proof\",\"type\":\"uint256[24]\"},{\"internalType\":\"uint256[3]\",\"name\":\"_pubSignals\",\"type\":\"uint256[3]\"}],\"name\":\"verifyProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawFulfillerBalance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_adminRole\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CommitmentAlreadySet\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CommitmentInUse\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InsufficientBalance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InsufficientFee\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCommitment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCommitmentBlock\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidFeePercentage\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidProof\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidRequestId\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidRequester\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSeedOrBlockHashUnavailable\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RequestAlreadyFulfilled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RequestNotFulfilled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RequestStillValid\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"ContractFeePercentageUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ContractFeesWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newFee\",\"type\":\"uint256\"}],\"name\":\"RequestFeeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"rewardReceiver\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256[24]\",\"name\":\"proof\",\"type\":\"uint256[24]\"},{\"indexed\":false,\"internalType\":\"uint256[3]\",\"name\":\"publicInputs\",\"type\":\"uint256[3]\"}],\"name\":\"RequestFulfilled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"rewardReceiver\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"RewardReceiverBalanceWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"requester\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"feePaid\",\"type\":\"uint256\"}],\"name\":\"RngRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"commitmentBlockSet\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"commitmentInUse\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"commitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractFeeBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractFeePercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"entropies\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"getEntropy\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_rewardReceiver\",\"type\":\"address\"}],\"name\":\"getRewardReceiverBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nextRequestId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"}],\"name\":\"refundUnfulfilledRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"requestBlockSet\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"requestFeePaid\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestRng\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"requesters\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"rewardReceiverBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_commitment\",\"type\":\"uint256\"}],\"name\":\"setCommitment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newPercentage\",\"type\":\"uint256\"}],\"name\":\"setContractFeePercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newFee\",\"type\":\"uint256\"}],\"name\":\"setRequestFee\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[24]\",\"name\":\"_proof\",\"type\":\"uint256[24]\"},{\"internalType\":\"uint256[3]\",\"name\":\"_publicInputs\",\"type\":\"uint256[3]\"},{\"internalType\":\"uint256\",\"name\":\"_requestId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_rewardReceiver\",\"type\":\"address\"}],\"name\":\"submitEntropy\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[24]\",\"name\":\"_proof\",\"type\":\"uint256[24]\"},{\"internalType\":\"uint256[3]\",\"name\":\"_pubSignals\",\"type\":\"uint256[3]\"}],\"name\":\"verifyProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawContractFees\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawRewardReceiverBalance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // FoundnoneVRFABI is the input ABI used to generate the binding from.
@@ -242,10 +242,10 @@ func (_FoundnoneVRF *FoundnoneVRFCallerSession) DEFAULTADMINROLE() ([32]byte, er
 	return _FoundnoneVRF.Contract.DEFAULTADMINROLE(&_FoundnoneVRF.CallOpts)
 }
 
-// CommitmentBlockSet is a free data retrieval call binding the contract method 0x466dab75.
+// CommitmentBlockSet is a free data retrieval call binding the contract method 0x1ad6bdd6.
 //
-// Solidity: function commitmentBlockSet(uint256 ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCaller) CommitmentBlockSet(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
+// Solidity: function commitmentBlockSet(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCaller) CommitmentBlockSet(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _FoundnoneVRF.contract.Call(opts, &out, "commitmentBlockSet", arg0)
 
@@ -259,18 +259,49 @@ func (_FoundnoneVRF *FoundnoneVRFCaller) CommitmentBlockSet(opts *bind.CallOpts,
 
 }
 
-// CommitmentBlockSet is a free data retrieval call binding the contract method 0x466dab75.
+// CommitmentBlockSet is a free data retrieval call binding the contract method 0x1ad6bdd6.
 //
-// Solidity: function commitmentBlockSet(uint256 ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFSession) CommitmentBlockSet(arg0 *big.Int) (*big.Int, error) {
+// Solidity: function commitmentBlockSet(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFSession) CommitmentBlockSet(arg0 common.Address) (*big.Int, error) {
 	return _FoundnoneVRF.Contract.CommitmentBlockSet(&_FoundnoneVRF.CallOpts, arg0)
 }
 
-// CommitmentBlockSet is a free data retrieval call binding the contract method 0x466dab75.
+// CommitmentBlockSet is a free data retrieval call binding the contract method 0x1ad6bdd6.
 //
-// Solidity: function commitmentBlockSet(uint256 ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCallerSession) CommitmentBlockSet(arg0 *big.Int) (*big.Int, error) {
+// Solidity: function commitmentBlockSet(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) CommitmentBlockSet(arg0 common.Address) (*big.Int, error) {
 	return _FoundnoneVRF.Contract.CommitmentBlockSet(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// CommitmentInUse is a free data retrieval call binding the contract method 0x21b4dae0.
+//
+// Solidity: function commitmentInUse(uint256 ) view returns(bool)
+func (_FoundnoneVRF *FoundnoneVRFCaller) CommitmentInUse(opts *bind.CallOpts, arg0 *big.Int) (bool, error) {
+	var out []interface{}
+	err := _FoundnoneVRF.contract.Call(opts, &out, "commitmentInUse", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// CommitmentInUse is a free data retrieval call binding the contract method 0x21b4dae0.
+//
+// Solidity: function commitmentInUse(uint256 ) view returns(bool)
+func (_FoundnoneVRF *FoundnoneVRFSession) CommitmentInUse(arg0 *big.Int) (bool, error) {
+	return _FoundnoneVRF.Contract.CommitmentInUse(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// CommitmentInUse is a free data retrieval call binding the contract method 0x21b4dae0.
+//
+// Solidity: function commitmentInUse(uint256 ) view returns(bool)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) CommitmentInUse(arg0 *big.Int) (bool, error) {
+	return _FoundnoneVRF.Contract.CommitmentInUse(&_FoundnoneVRF.CallOpts, arg0)
 }
 
 // Commitments is a free data retrieval call binding the contract method 0xe8fcf723.
@@ -397,37 +428,6 @@ func (_FoundnoneVRF *FoundnoneVRFCallerSession) Entropies(arg0 *big.Int) (*big.I
 	return _FoundnoneVRF.Contract.Entropies(&_FoundnoneVRF.CallOpts, arg0)
 }
 
-// FulfillerBalance is a free data retrieval call binding the contract method 0xf9a5009f.
-//
-// Solidity: function fulfillerBalance(address ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCaller) FulfillerBalance(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _FoundnoneVRF.contract.Call(opts, &out, "fulfillerBalance", arg0)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// FulfillerBalance is a free data retrieval call binding the contract method 0xf9a5009f.
-//
-// Solidity: function fulfillerBalance(address ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFSession) FulfillerBalance(arg0 common.Address) (*big.Int, error) {
-	return _FoundnoneVRF.Contract.FulfillerBalance(&_FoundnoneVRF.CallOpts, arg0)
-}
-
-// FulfillerBalance is a free data retrieval call binding the contract method 0xf9a5009f.
-//
-// Solidity: function fulfillerBalance(address ) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCallerSession) FulfillerBalance(arg0 common.Address) (*big.Int, error) {
-	return _FoundnoneVRF.Contract.FulfillerBalance(&_FoundnoneVRF.CallOpts, arg0)
-}
-
 // GetEntropy is a free data retrieval call binding the contract method 0x74e6a469.
 //
 // Solidity: function getEntropy(uint256 _requestId) view returns(uint256)
@@ -459,12 +459,12 @@ func (_FoundnoneVRF *FoundnoneVRFCallerSession) GetEntropy(_requestId *big.Int) 
 	return _FoundnoneVRF.Contract.GetEntropy(&_FoundnoneVRF.CallOpts, _requestId)
 }
 
-// GetFulfillerBalance is a free data retrieval call binding the contract method 0xa9bbbc09.
+// GetRewardReceiverBalance is a free data retrieval call binding the contract method 0x64b0c523.
 //
-// Solidity: function getFulfillerBalance(address _fulfiller) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCaller) GetFulfillerBalance(opts *bind.CallOpts, _fulfiller common.Address) (*big.Int, error) {
+// Solidity: function getRewardReceiverBalance(address _rewardReceiver) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCaller) GetRewardReceiverBalance(opts *bind.CallOpts, _rewardReceiver common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _FoundnoneVRF.contract.Call(opts, &out, "getFulfillerBalance", _fulfiller)
+	err := _FoundnoneVRF.contract.Call(opts, &out, "getRewardReceiverBalance", _rewardReceiver)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -476,18 +476,18 @@ func (_FoundnoneVRF *FoundnoneVRFCaller) GetFulfillerBalance(opts *bind.CallOpts
 
 }
 
-// GetFulfillerBalance is a free data retrieval call binding the contract method 0xa9bbbc09.
+// GetRewardReceiverBalance is a free data retrieval call binding the contract method 0x64b0c523.
 //
-// Solidity: function getFulfillerBalance(address _fulfiller) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFSession) GetFulfillerBalance(_fulfiller common.Address) (*big.Int, error) {
-	return _FoundnoneVRF.Contract.GetFulfillerBalance(&_FoundnoneVRF.CallOpts, _fulfiller)
+// Solidity: function getRewardReceiverBalance(address _rewardReceiver) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFSession) GetRewardReceiverBalance(_rewardReceiver common.Address) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.GetRewardReceiverBalance(&_FoundnoneVRF.CallOpts, _rewardReceiver)
 }
 
-// GetFulfillerBalance is a free data retrieval call binding the contract method 0xa9bbbc09.
+// GetRewardReceiverBalance is a free data retrieval call binding the contract method 0x64b0c523.
 //
-// Solidity: function getFulfillerBalance(address _fulfiller) view returns(uint256)
-func (_FoundnoneVRF *FoundnoneVRFCallerSession) GetFulfillerBalance(_fulfiller common.Address) (*big.Int, error) {
-	return _FoundnoneVRF.Contract.GetFulfillerBalance(&_FoundnoneVRF.CallOpts, _fulfiller)
+// Solidity: function getRewardReceiverBalance(address _rewardReceiver) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) GetRewardReceiverBalance(_rewardReceiver common.Address) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.GetRewardReceiverBalance(&_FoundnoneVRF.CallOpts, _rewardReceiver)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
@@ -645,6 +645,99 @@ func (_FoundnoneVRF *FoundnoneVRFCallerSession) RequestFee() (*big.Int, error) {
 	return _FoundnoneVRF.Contract.RequestFee(&_FoundnoneVRF.CallOpts)
 }
 
+// RequestFeePaid is a free data retrieval call binding the contract method 0xef7cc992.
+//
+// Solidity: function requestFeePaid(uint256 ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCaller) RequestFeePaid(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _FoundnoneVRF.contract.Call(opts, &out, "requestFeePaid", arg0)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// RequestFeePaid is a free data retrieval call binding the contract method 0xef7cc992.
+//
+// Solidity: function requestFeePaid(uint256 ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFSession) RequestFeePaid(arg0 *big.Int) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.RequestFeePaid(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// RequestFeePaid is a free data retrieval call binding the contract method 0xef7cc992.
+//
+// Solidity: function requestFeePaid(uint256 ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) RequestFeePaid(arg0 *big.Int) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.RequestFeePaid(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// Requesters is a free data retrieval call binding the contract method 0x5e1a6c17.
+//
+// Solidity: function requesters(uint256 ) view returns(address)
+func (_FoundnoneVRF *FoundnoneVRFCaller) Requesters(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
+	var out []interface{}
+	err := _FoundnoneVRF.contract.Call(opts, &out, "requesters", arg0)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// Requesters is a free data retrieval call binding the contract method 0x5e1a6c17.
+//
+// Solidity: function requesters(uint256 ) view returns(address)
+func (_FoundnoneVRF *FoundnoneVRFSession) Requesters(arg0 *big.Int) (common.Address, error) {
+	return _FoundnoneVRF.Contract.Requesters(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// Requesters is a free data retrieval call binding the contract method 0x5e1a6c17.
+//
+// Solidity: function requesters(uint256 ) view returns(address)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) Requesters(arg0 *big.Int) (common.Address, error) {
+	return _FoundnoneVRF.Contract.Requesters(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// RewardReceiverBalance is a free data retrieval call binding the contract method 0xbdfd7eb3.
+//
+// Solidity: function rewardReceiverBalance(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCaller) RewardReceiverBalance(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _FoundnoneVRF.contract.Call(opts, &out, "rewardReceiverBalance", arg0)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// RewardReceiverBalance is a free data retrieval call binding the contract method 0xbdfd7eb3.
+//
+// Solidity: function rewardReceiverBalance(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFSession) RewardReceiverBalance(arg0 common.Address) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.RewardReceiverBalance(&_FoundnoneVRF.CallOpts, arg0)
+}
+
+// RewardReceiverBalance is a free data retrieval call binding the contract method 0xbdfd7eb3.
+//
+// Solidity: function rewardReceiverBalance(address ) view returns(uint256)
+func (_FoundnoneVRF *FoundnoneVRFCallerSession) RewardReceiverBalance(arg0 common.Address) (*big.Int, error) {
+	return _FoundnoneVRF.Contract.RewardReceiverBalance(&_FoundnoneVRF.CallOpts, arg0)
+}
+
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
@@ -728,6 +821,27 @@ func (_FoundnoneVRF *FoundnoneVRFTransactorSession) GrantRole(role [32]byte, acc
 	return _FoundnoneVRF.Contract.GrantRole(&_FoundnoneVRF.TransactOpts, role, account)
 }
 
+// RefundUnfulfilledRequest is a paid mutator transaction binding the contract method 0xca6f30a4.
+//
+// Solidity: function refundUnfulfilledRequest(uint256 _requestId) returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactor) RefundUnfulfilledRequest(opts *bind.TransactOpts, _requestId *big.Int) (*types.Transaction, error) {
+	return _FoundnoneVRF.contract.Transact(opts, "refundUnfulfilledRequest", _requestId)
+}
+
+// RefundUnfulfilledRequest is a paid mutator transaction binding the contract method 0xca6f30a4.
+//
+// Solidity: function refundUnfulfilledRequest(uint256 _requestId) returns()
+func (_FoundnoneVRF *FoundnoneVRFSession) RefundUnfulfilledRequest(_requestId *big.Int) (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.RefundUnfulfilledRequest(&_FoundnoneVRF.TransactOpts, _requestId)
+}
+
+// RefundUnfulfilledRequest is a paid mutator transaction binding the contract method 0xca6f30a4.
+//
+// Solidity: function refundUnfulfilledRequest(uint256 _requestId) returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactorSession) RefundUnfulfilledRequest(_requestId *big.Int) (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.RefundUnfulfilledRequest(&_FoundnoneVRF.TransactOpts, _requestId)
+}
+
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
@@ -749,25 +863,25 @@ func (_FoundnoneVRF *FoundnoneVRFTransactorSession) RenounceRole(role [32]byte, 
 	return _FoundnoneVRF.Contract.RenounceRole(&_FoundnoneVRF.TransactOpts, role, callerConfirmation)
 }
 
-// RequestVrf is a paid mutator transaction binding the contract method 0x47555a34.
+// RequestRng is a paid mutator transaction binding the contract method 0x79663e49.
 //
-// Solidity: function requestVrf() payable returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactor) RequestVrf(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _FoundnoneVRF.contract.Transact(opts, "requestVrf")
+// Solidity: function requestRng() payable returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactor) RequestRng(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _FoundnoneVRF.contract.Transact(opts, "requestRng")
 }
 
-// RequestVrf is a paid mutator transaction binding the contract method 0x47555a34.
+// RequestRng is a paid mutator transaction binding the contract method 0x79663e49.
 //
-// Solidity: function requestVrf() payable returns()
-func (_FoundnoneVRF *FoundnoneVRFSession) RequestVrf() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.RequestVrf(&_FoundnoneVRF.TransactOpts)
+// Solidity: function requestRng() payable returns()
+func (_FoundnoneVRF *FoundnoneVRFSession) RequestRng() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.RequestRng(&_FoundnoneVRF.TransactOpts)
 }
 
-// RequestVrf is a paid mutator transaction binding the contract method 0x47555a34.
+// RequestRng is a paid mutator transaction binding the contract method 0x79663e49.
 //
-// Solidity: function requestVrf() payable returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactorSession) RequestVrf() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.RequestVrf(&_FoundnoneVRF.TransactOpts)
+// Solidity: function requestRng() payable returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactorSession) RequestRng() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.RequestRng(&_FoundnoneVRF.TransactOpts)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
@@ -854,67 +968,67 @@ func (_FoundnoneVRF *FoundnoneVRFTransactorSession) SetRequestFee(_newFee *big.I
 	return _FoundnoneVRF.Contract.SetRequestFee(&_FoundnoneVRF.TransactOpts, _newFee)
 }
 
-// SubmitEntropy is a paid mutator transaction binding the contract method 0xf551b738.
+// SubmitEntropy is a paid mutator transaction binding the contract method 0x6804fe15.
 //
-// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _fulfiller, uint256 _nextCommitment) returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactor) SubmitEntropy(opts *bind.TransactOpts, _proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _fulfiller common.Address, _nextCommitment *big.Int) (*types.Transaction, error) {
-	return _FoundnoneVRF.contract.Transact(opts, "submitEntropy", _proof, _publicInputs, _requestId, _fulfiller, _nextCommitment)
+// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _rewardReceiver) returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactor) SubmitEntropy(opts *bind.TransactOpts, _proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _rewardReceiver common.Address) (*types.Transaction, error) {
+	return _FoundnoneVRF.contract.Transact(opts, "submitEntropy", _proof, _publicInputs, _requestId, _rewardReceiver)
 }
 
-// SubmitEntropy is a paid mutator transaction binding the contract method 0xf551b738.
+// SubmitEntropy is a paid mutator transaction binding the contract method 0x6804fe15.
 //
-// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _fulfiller, uint256 _nextCommitment) returns()
-func (_FoundnoneVRF *FoundnoneVRFSession) SubmitEntropy(_proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _fulfiller common.Address, _nextCommitment *big.Int) (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.SubmitEntropy(&_FoundnoneVRF.TransactOpts, _proof, _publicInputs, _requestId, _fulfiller, _nextCommitment)
+// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _rewardReceiver) returns()
+func (_FoundnoneVRF *FoundnoneVRFSession) SubmitEntropy(_proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _rewardReceiver common.Address) (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.SubmitEntropy(&_FoundnoneVRF.TransactOpts, _proof, _publicInputs, _requestId, _rewardReceiver)
 }
 
-// SubmitEntropy is a paid mutator transaction binding the contract method 0xf551b738.
+// SubmitEntropy is a paid mutator transaction binding the contract method 0x6804fe15.
 //
-// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _fulfiller, uint256 _nextCommitment) returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactorSession) SubmitEntropy(_proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _fulfiller common.Address, _nextCommitment *big.Int) (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.SubmitEntropy(&_FoundnoneVRF.TransactOpts, _proof, _publicInputs, _requestId, _fulfiller, _nextCommitment)
+// Solidity: function submitEntropy(uint256[24] _proof, uint256[3] _publicInputs, uint256 _requestId, address _rewardReceiver) returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactorSession) SubmitEntropy(_proof [24]*big.Int, _publicInputs [3]*big.Int, _requestId *big.Int, _rewardReceiver common.Address) (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.SubmitEntropy(&_FoundnoneVRF.TransactOpts, _proof, _publicInputs, _requestId, _rewardReceiver)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
+// WithdrawContractFees is a paid mutator transaction binding the contract method 0xea3de4cb.
 //
-// Solidity: function withdraw() returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactor) Withdraw(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _FoundnoneVRF.contract.Transact(opts, "withdraw")
+// Solidity: function withdrawContractFees() returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactor) WithdrawContractFees(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _FoundnoneVRF.contract.Transact(opts, "withdrawContractFees")
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
+// WithdrawContractFees is a paid mutator transaction binding the contract method 0xea3de4cb.
 //
-// Solidity: function withdraw() returns()
-func (_FoundnoneVRF *FoundnoneVRFSession) Withdraw() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.Withdraw(&_FoundnoneVRF.TransactOpts)
+// Solidity: function withdrawContractFees() returns()
+func (_FoundnoneVRF *FoundnoneVRFSession) WithdrawContractFees() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.WithdrawContractFees(&_FoundnoneVRF.TransactOpts)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
+// WithdrawContractFees is a paid mutator transaction binding the contract method 0xea3de4cb.
 //
-// Solidity: function withdraw() returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactorSession) Withdraw() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.Withdraw(&_FoundnoneVRF.TransactOpts)
+// Solidity: function withdrawContractFees() returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactorSession) WithdrawContractFees() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.WithdrawContractFees(&_FoundnoneVRF.TransactOpts)
 }
 
-// WithdrawFulfillerBalance is a paid mutator transaction binding the contract method 0x65ee1ce2.
+// WithdrawRewardReceiverBalance is a paid mutator transaction binding the contract method 0x5e089f99.
 //
-// Solidity: function withdrawFulfillerBalance() returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactor) WithdrawFulfillerBalance(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _FoundnoneVRF.contract.Transact(opts, "withdrawFulfillerBalance")
+// Solidity: function withdrawRewardReceiverBalance() returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactor) WithdrawRewardReceiverBalance(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _FoundnoneVRF.contract.Transact(opts, "withdrawRewardReceiverBalance")
 }
 
-// WithdrawFulfillerBalance is a paid mutator transaction binding the contract method 0x65ee1ce2.
+// WithdrawRewardReceiverBalance is a paid mutator transaction binding the contract method 0x5e089f99.
 //
-// Solidity: function withdrawFulfillerBalance() returns()
-func (_FoundnoneVRF *FoundnoneVRFSession) WithdrawFulfillerBalance() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.WithdrawFulfillerBalance(&_FoundnoneVRF.TransactOpts)
+// Solidity: function withdrawRewardReceiverBalance() returns()
+func (_FoundnoneVRF *FoundnoneVRFSession) WithdrawRewardReceiverBalance() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.WithdrawRewardReceiverBalance(&_FoundnoneVRF.TransactOpts)
 }
 
-// WithdrawFulfillerBalance is a paid mutator transaction binding the contract method 0x65ee1ce2.
+// WithdrawRewardReceiverBalance is a paid mutator transaction binding the contract method 0x5e089f99.
 //
-// Solidity: function withdrawFulfillerBalance() returns()
-func (_FoundnoneVRF *FoundnoneVRFTransactorSession) WithdrawFulfillerBalance() (*types.Transaction, error) {
-	return _FoundnoneVRF.Contract.WithdrawFulfillerBalance(&_FoundnoneVRF.TransactOpts)
+// Solidity: function withdrawRewardReceiverBalance() returns()
+func (_FoundnoneVRF *FoundnoneVRFTransactorSession) WithdrawRewardReceiverBalance() (*types.Transaction, error) {
+	return _FoundnoneVRF.Contract.WithdrawRewardReceiverBalance(&_FoundnoneVRF.TransactOpts)
 }
 
 // FoundnoneVRFContractFeePercentageUpdatedIterator is returned from FilterContractFeePercentageUpdated and is used to iterate over the raw logs and unpacked data for ContractFeePercentageUpdated events raised by the FoundnoneVRF contract.
@@ -1185,299 +1299,6 @@ func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseContractFeesWithdrawn(log types.
 	return event, nil
 }
 
-// FoundnoneVRFEntropyStoredIterator is returned from FilterEntropyStored and is used to iterate over the raw logs and unpacked data for EntropyStored events raised by the FoundnoneVRF contract.
-type FoundnoneVRFEntropyStoredIterator struct {
-	Event *FoundnoneVRFEntropyStored // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *FoundnoneVRFEntropyStoredIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(FoundnoneVRFEntropyStored)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(FoundnoneVRFEntropyStored)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *FoundnoneVRFEntropyStoredIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *FoundnoneVRFEntropyStoredIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// FoundnoneVRFEntropyStored represents a EntropyStored event raised by the FoundnoneVRF contract.
-type FoundnoneVRFEntropyStored struct {
-	RequestId *big.Int
-	Fulfiller common.Address
-	Seed      *big.Int
-	Entropy   *big.Int
-	Proof     [24]*big.Int
-	Raw       types.Log // Blockchain specific contextual infos
-}
-
-// FilterEntropyStored is a free log retrieval operation binding the contract event 0xf4e6cd35811bdc50537273245231f3396d0bd06cda7a89712228b0a609783b7b.
-//
-// Solidity: event EntropyStored(uint256 indexed requestId, address fulfiller, uint256 seed, uint256 entropy, uint256[24] _proof)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterEntropyStored(opts *bind.FilterOpts, requestId []*big.Int) (*FoundnoneVRFEntropyStoredIterator, error) {
-
-	var requestIdRule []interface{}
-	for _, requestIdItem := range requestId {
-		requestIdRule = append(requestIdRule, requestIdItem)
-	}
-
-	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "EntropyStored", requestIdRule)
-	if err != nil {
-		return nil, err
-	}
-	return &FoundnoneVRFEntropyStoredIterator{contract: _FoundnoneVRF.contract, event: "EntropyStored", logs: logs, sub: sub}, nil
-}
-
-// WatchEntropyStored is a free log subscription operation binding the contract event 0xf4e6cd35811bdc50537273245231f3396d0bd06cda7a89712228b0a609783b7b.
-//
-// Solidity: event EntropyStored(uint256 indexed requestId, address fulfiller, uint256 seed, uint256 entropy, uint256[24] _proof)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchEntropyStored(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFEntropyStored, requestId []*big.Int) (event.Subscription, error) {
-
-	var requestIdRule []interface{}
-	for _, requestIdItem := range requestId {
-		requestIdRule = append(requestIdRule, requestIdItem)
-	}
-
-	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "EntropyStored", requestIdRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(FoundnoneVRFEntropyStored)
-				if err := _FoundnoneVRF.contract.UnpackLog(event, "EntropyStored", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseEntropyStored is a log parse operation binding the contract event 0xf4e6cd35811bdc50537273245231f3396d0bd06cda7a89712228b0a609783b7b.
-//
-// Solidity: event EntropyStored(uint256 indexed requestId, address fulfiller, uint256 seed, uint256 entropy, uint256[24] _proof)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseEntropyStored(log types.Log) (*FoundnoneVRFEntropyStored, error) {
-	event := new(FoundnoneVRFEntropyStored)
-	if err := _FoundnoneVRF.contract.UnpackLog(event, "EntropyStored", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// FoundnoneVRFFulfillerBalanceWithdrawnIterator is returned from FilterFulfillerBalanceWithdrawn and is used to iterate over the raw logs and unpacked data for FulfillerBalanceWithdrawn events raised by the FoundnoneVRF contract.
-type FoundnoneVRFFulfillerBalanceWithdrawnIterator struct {
-	Event *FoundnoneVRFFulfillerBalanceWithdrawn // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *FoundnoneVRFFulfillerBalanceWithdrawnIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(FoundnoneVRFFulfillerBalanceWithdrawn)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(FoundnoneVRFFulfillerBalanceWithdrawn)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *FoundnoneVRFFulfillerBalanceWithdrawnIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *FoundnoneVRFFulfillerBalanceWithdrawnIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// FoundnoneVRFFulfillerBalanceWithdrawn represents a FulfillerBalanceWithdrawn event raised by the FoundnoneVRF contract.
-type FoundnoneVRFFulfillerBalanceWithdrawn struct {
-	Fulfiller common.Address
-	Amount    *big.Int
-	Raw       types.Log // Blockchain specific contextual infos
-}
-
-// FilterFulfillerBalanceWithdrawn is a free log retrieval operation binding the contract event 0x07e8cffed7791cdd8e964a5b3a8174030449d96c66a587dce8725e4309a15ab5.
-//
-// Solidity: event FulfillerBalanceWithdrawn(address indexed fulfiller, uint256 amount)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterFulfillerBalanceWithdrawn(opts *bind.FilterOpts, fulfiller []common.Address) (*FoundnoneVRFFulfillerBalanceWithdrawnIterator, error) {
-
-	var fulfillerRule []interface{}
-	for _, fulfillerItem := range fulfiller {
-		fulfillerRule = append(fulfillerRule, fulfillerItem)
-	}
-
-	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "FulfillerBalanceWithdrawn", fulfillerRule)
-	if err != nil {
-		return nil, err
-	}
-	return &FoundnoneVRFFulfillerBalanceWithdrawnIterator{contract: _FoundnoneVRF.contract, event: "FulfillerBalanceWithdrawn", logs: logs, sub: sub}, nil
-}
-
-// WatchFulfillerBalanceWithdrawn is a free log subscription operation binding the contract event 0x07e8cffed7791cdd8e964a5b3a8174030449d96c66a587dce8725e4309a15ab5.
-//
-// Solidity: event FulfillerBalanceWithdrawn(address indexed fulfiller, uint256 amount)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchFulfillerBalanceWithdrawn(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFFulfillerBalanceWithdrawn, fulfiller []common.Address) (event.Subscription, error) {
-
-	var fulfillerRule []interface{}
-	for _, fulfillerItem := range fulfiller {
-		fulfillerRule = append(fulfillerRule, fulfillerItem)
-	}
-
-	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "FulfillerBalanceWithdrawn", fulfillerRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(FoundnoneVRFFulfillerBalanceWithdrawn)
-				if err := _FoundnoneVRF.contract.UnpackLog(event, "FulfillerBalanceWithdrawn", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseFulfillerBalanceWithdrawn is a log parse operation binding the contract event 0x07e8cffed7791cdd8e964a5b3a8174030449d96c66a587dce8725e4309a15ab5.
-//
-// Solidity: event FulfillerBalanceWithdrawn(address indexed fulfiller, uint256 amount)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseFulfillerBalanceWithdrawn(log types.Log) (*FoundnoneVRFFulfillerBalanceWithdrawn, error) {
-	event := new(FoundnoneVRFFulfillerBalanceWithdrawn)
-	if err := _FoundnoneVRF.contract.UnpackLog(event, "FulfillerBalanceWithdrawn", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
 // FoundnoneVRFRequestFeeUpdatedIterator is returned from FilterRequestFeeUpdated and is used to iterate over the raw logs and unpacked data for RequestFeeUpdated events raised by the FoundnoneVRF contract.
 type FoundnoneVRFRequestFeeUpdatedIterator struct {
 	Event *FoundnoneVRFRequestFeeUpdated // Event containing the contract specifics and raw log
@@ -1606,6 +1427,435 @@ func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchRequestFeeUpdated(opts *bind.Wat
 func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseRequestFeeUpdated(log types.Log) (*FoundnoneVRFRequestFeeUpdated, error) {
 	event := new(FoundnoneVRFRequestFeeUpdated)
 	if err := _FoundnoneVRF.contract.UnpackLog(event, "RequestFeeUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FoundnoneVRFRequestFulfilledIterator is returned from FilterRequestFulfilled and is used to iterate over the raw logs and unpacked data for RequestFulfilled events raised by the FoundnoneVRF contract.
+type FoundnoneVRFRequestFulfilledIterator struct {
+	Event *FoundnoneVRFRequestFulfilled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FoundnoneVRFRequestFulfilledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FoundnoneVRFRequestFulfilled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FoundnoneVRFRequestFulfilled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FoundnoneVRFRequestFulfilledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FoundnoneVRFRequestFulfilledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FoundnoneVRFRequestFulfilled represents a RequestFulfilled event raised by the FoundnoneVRF contract.
+type FoundnoneVRFRequestFulfilled struct {
+	RequestId      *big.Int
+	RewardReceiver common.Address
+	Proof          [24]*big.Int
+	PublicInputs   [3]*big.Int
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterRequestFulfilled is a free log retrieval operation binding the contract event 0x11f7f1fb4febf9b59cf5c95f67764124b90fdf34078f8289de9cad7e57c1cfdc.
+//
+// Solidity: event RequestFulfilled(uint256 indexed requestId, address rewardReceiver, uint256[24] proof, uint256[3] publicInputs)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterRequestFulfilled(opts *bind.FilterOpts, requestId []*big.Int) (*FoundnoneVRFRequestFulfilledIterator, error) {
+
+	var requestIdRule []interface{}
+	for _, requestIdItem := range requestId {
+		requestIdRule = append(requestIdRule, requestIdItem)
+	}
+
+	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "RequestFulfilled", requestIdRule)
+	if err != nil {
+		return nil, err
+	}
+	return &FoundnoneVRFRequestFulfilledIterator{contract: _FoundnoneVRF.contract, event: "RequestFulfilled", logs: logs, sub: sub}, nil
+}
+
+// WatchRequestFulfilled is a free log subscription operation binding the contract event 0x11f7f1fb4febf9b59cf5c95f67764124b90fdf34078f8289de9cad7e57c1cfdc.
+//
+// Solidity: event RequestFulfilled(uint256 indexed requestId, address rewardReceiver, uint256[24] proof, uint256[3] publicInputs)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchRequestFulfilled(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFRequestFulfilled, requestId []*big.Int) (event.Subscription, error) {
+
+	var requestIdRule []interface{}
+	for _, requestIdItem := range requestId {
+		requestIdRule = append(requestIdRule, requestIdItem)
+	}
+
+	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "RequestFulfilled", requestIdRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FoundnoneVRFRequestFulfilled)
+				if err := _FoundnoneVRF.contract.UnpackLog(event, "RequestFulfilled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRequestFulfilled is a log parse operation binding the contract event 0x11f7f1fb4febf9b59cf5c95f67764124b90fdf34078f8289de9cad7e57c1cfdc.
+//
+// Solidity: event RequestFulfilled(uint256 indexed requestId, address rewardReceiver, uint256[24] proof, uint256[3] publicInputs)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseRequestFulfilled(log types.Log) (*FoundnoneVRFRequestFulfilled, error) {
+	event := new(FoundnoneVRFRequestFulfilled)
+	if err := _FoundnoneVRF.contract.UnpackLog(event, "RequestFulfilled", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FoundnoneVRFRewardReceiverBalanceWithdrawnIterator is returned from FilterRewardReceiverBalanceWithdrawn and is used to iterate over the raw logs and unpacked data for RewardReceiverBalanceWithdrawn events raised by the FoundnoneVRF contract.
+type FoundnoneVRFRewardReceiverBalanceWithdrawnIterator struct {
+	Event *FoundnoneVRFRewardReceiverBalanceWithdrawn // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FoundnoneVRFRewardReceiverBalanceWithdrawnIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FoundnoneVRFRewardReceiverBalanceWithdrawn)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FoundnoneVRFRewardReceiverBalanceWithdrawn)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FoundnoneVRFRewardReceiverBalanceWithdrawnIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FoundnoneVRFRewardReceiverBalanceWithdrawnIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FoundnoneVRFRewardReceiverBalanceWithdrawn represents a RewardReceiverBalanceWithdrawn event raised by the FoundnoneVRF contract.
+type FoundnoneVRFRewardReceiverBalanceWithdrawn struct {
+	RewardReceiver common.Address
+	Amount         *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterRewardReceiverBalanceWithdrawn is a free log retrieval operation binding the contract event 0x0b40a73848f6d60e086f98c5ba41e8d98e0f0a47db8ae16597c266e3a5c40cba.
+//
+// Solidity: event RewardReceiverBalanceWithdrawn(address indexed rewardReceiver, uint256 amount)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterRewardReceiverBalanceWithdrawn(opts *bind.FilterOpts, rewardReceiver []common.Address) (*FoundnoneVRFRewardReceiverBalanceWithdrawnIterator, error) {
+
+	var rewardReceiverRule []interface{}
+	for _, rewardReceiverItem := range rewardReceiver {
+		rewardReceiverRule = append(rewardReceiverRule, rewardReceiverItem)
+	}
+
+	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "RewardReceiverBalanceWithdrawn", rewardReceiverRule)
+	if err != nil {
+		return nil, err
+	}
+	return &FoundnoneVRFRewardReceiverBalanceWithdrawnIterator{contract: _FoundnoneVRF.contract, event: "RewardReceiverBalanceWithdrawn", logs: logs, sub: sub}, nil
+}
+
+// WatchRewardReceiverBalanceWithdrawn is a free log subscription operation binding the contract event 0x0b40a73848f6d60e086f98c5ba41e8d98e0f0a47db8ae16597c266e3a5c40cba.
+//
+// Solidity: event RewardReceiverBalanceWithdrawn(address indexed rewardReceiver, uint256 amount)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchRewardReceiverBalanceWithdrawn(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFRewardReceiverBalanceWithdrawn, rewardReceiver []common.Address) (event.Subscription, error) {
+
+	var rewardReceiverRule []interface{}
+	for _, rewardReceiverItem := range rewardReceiver {
+		rewardReceiverRule = append(rewardReceiverRule, rewardReceiverItem)
+	}
+
+	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "RewardReceiverBalanceWithdrawn", rewardReceiverRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FoundnoneVRFRewardReceiverBalanceWithdrawn)
+				if err := _FoundnoneVRF.contract.UnpackLog(event, "RewardReceiverBalanceWithdrawn", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRewardReceiverBalanceWithdrawn is a log parse operation binding the contract event 0x0b40a73848f6d60e086f98c5ba41e8d98e0f0a47db8ae16597c266e3a5c40cba.
+//
+// Solidity: event RewardReceiverBalanceWithdrawn(address indexed rewardReceiver, uint256 amount)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseRewardReceiverBalanceWithdrawn(log types.Log) (*FoundnoneVRFRewardReceiverBalanceWithdrawn, error) {
+	event := new(FoundnoneVRFRewardReceiverBalanceWithdrawn)
+	if err := _FoundnoneVRF.contract.UnpackLog(event, "RewardReceiverBalanceWithdrawn", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FoundnoneVRFRngRequestedIterator is returned from FilterRngRequested and is used to iterate over the raw logs and unpacked data for RngRequested events raised by the FoundnoneVRF contract.
+type FoundnoneVRFRngRequestedIterator struct {
+	Event *FoundnoneVRFRngRequested // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FoundnoneVRFRngRequestedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FoundnoneVRFRngRequested)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FoundnoneVRFRngRequested)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FoundnoneVRFRngRequestedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FoundnoneVRFRngRequestedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FoundnoneVRFRngRequested represents a RngRequested event raised by the FoundnoneVRF contract.
+type FoundnoneVRFRngRequested struct {
+	RequestId *big.Int
+	BlockHash [32]byte
+	Requester common.Address
+	FeePaid   *big.Int
+	Raw       types.Log // Blockchain specific contextual infos
+}
+
+// FilterRngRequested is a free log retrieval operation binding the contract event 0xebd7660295e4ce331b3cfbc0706171ac8de0c07c415924affdcf42ddc11774dc.
+//
+// Solidity: event RngRequested(uint256 requestId, bytes32 blockHash, address requester, uint256 feePaid)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterRngRequested(opts *bind.FilterOpts) (*FoundnoneVRFRngRequestedIterator, error) {
+
+	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "RngRequested")
+	if err != nil {
+		return nil, err
+	}
+	return &FoundnoneVRFRngRequestedIterator{contract: _FoundnoneVRF.contract, event: "RngRequested", logs: logs, sub: sub}, nil
+}
+
+// WatchRngRequested is a free log subscription operation binding the contract event 0xebd7660295e4ce331b3cfbc0706171ac8de0c07c415924affdcf42ddc11774dc.
+//
+// Solidity: event RngRequested(uint256 requestId, bytes32 blockHash, address requester, uint256 feePaid)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchRngRequested(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFRngRequested) (event.Subscription, error) {
+
+	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "RngRequested")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FoundnoneVRFRngRequested)
+				if err := _FoundnoneVRF.contract.UnpackLog(event, "RngRequested", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRngRequested is a log parse operation binding the contract event 0xebd7660295e4ce331b3cfbc0706171ac8de0c07c415924affdcf42ddc11774dc.
+//
+// Solidity: event RngRequested(uint256 requestId, bytes32 blockHash, address requester, uint256 feePaid)
+func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseRngRequested(log types.Log) (*FoundnoneVRFRngRequested, error) {
+	event := new(FoundnoneVRFRngRequested)
+	if err := _FoundnoneVRF.contract.UnpackLog(event, "RngRequested", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -2092,142 +2342,6 @@ func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchRoleRevoked(opts *bind.WatchOpts
 func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseRoleRevoked(log types.Log) (*FoundnoneVRFRoleRevoked, error) {
 	event := new(FoundnoneVRFRoleRevoked)
 	if err := _FoundnoneVRF.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// FoundnoneVRFVrfRequestedIterator is returned from FilterVrfRequested and is used to iterate over the raw logs and unpacked data for VrfRequested events raised by the FoundnoneVRF contract.
-type FoundnoneVRFVrfRequestedIterator struct {
-	Event *FoundnoneVRFVrfRequested // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *FoundnoneVRFVrfRequestedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(FoundnoneVRFVrfRequested)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(FoundnoneVRFVrfRequested)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *FoundnoneVRFVrfRequestedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *FoundnoneVRFVrfRequestedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// FoundnoneVRFVrfRequested represents a VrfRequested event raised by the FoundnoneVRF contract.
-type FoundnoneVRFVrfRequested struct {
-	RequestId *big.Int
-	Requester common.Address
-	FeePaid   *big.Int
-	Raw       types.Log // Blockchain specific contextual infos
-}
-
-// FilterVrfRequested is a free log retrieval operation binding the contract event 0xbc9672b0f560c3035dc39fb85bbb1c458de36b5aa7ecdfd4496b2e302415e166.
-//
-// Solidity: event VrfRequested(uint256 requestId, address requester, uint256 feePaid)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) FilterVrfRequested(opts *bind.FilterOpts) (*FoundnoneVRFVrfRequestedIterator, error) {
-
-	logs, sub, err := _FoundnoneVRF.contract.FilterLogs(opts, "VrfRequested")
-	if err != nil {
-		return nil, err
-	}
-	return &FoundnoneVRFVrfRequestedIterator{contract: _FoundnoneVRF.contract, event: "VrfRequested", logs: logs, sub: sub}, nil
-}
-
-// WatchVrfRequested is a free log subscription operation binding the contract event 0xbc9672b0f560c3035dc39fb85bbb1c458de36b5aa7ecdfd4496b2e302415e166.
-//
-// Solidity: event VrfRequested(uint256 requestId, address requester, uint256 feePaid)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) WatchVrfRequested(opts *bind.WatchOpts, sink chan<- *FoundnoneVRFVrfRequested) (event.Subscription, error) {
-
-	logs, sub, err := _FoundnoneVRF.contract.WatchLogs(opts, "VrfRequested")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(FoundnoneVRFVrfRequested)
-				if err := _FoundnoneVRF.contract.UnpackLog(event, "VrfRequested", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseVrfRequested is a log parse operation binding the contract event 0xbc9672b0f560c3035dc39fb85bbb1c458de36b5aa7ecdfd4496b2e302415e166.
-//
-// Solidity: event VrfRequested(uint256 requestId, address requester, uint256 feePaid)
-func (_FoundnoneVRF *FoundnoneVRFFilterer) ParseVrfRequested(log types.Log) (*FoundnoneVRFVrfRequested, error) {
-	event := new(FoundnoneVRFVrfRequested)
-	if err := _FoundnoneVRF.contract.UnpackLog(event, "VrfRequested", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
