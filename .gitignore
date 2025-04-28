@@ -9,9 +9,12 @@ contracts/artifacts
 contracts/cache
 contracts/ignition/deployments
 
-circom/build
+circom/build/*
+
 *.ptau
 
 *.wtns
 
 *coverage*
+
+.DS_Store
