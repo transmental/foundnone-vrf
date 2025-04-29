@@ -20,8 +20,8 @@ export default function Home() {
   const [logsActive, setLogsActive] = useState(true)
 
   const inputRef = useRef<HTMLInputElement>(null)
+  const watcherRef = useRef<() => void | null>(null)
 
-  // watch for new  messages to the terminal and scroll to the bottom
   useEffect(() => {
     const terminal = document.getElementById('terminal')
     if (terminal) {
@@ -30,15 +30,23 @@ export default function Home() {
   }, [terminalOutput])
 
   useEffect(() => {
-    const handleClick = () => {
-      inputRef.current?.focus()
-    }
+    // just capture any keypresses and focus the input
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'c' || e.key === 'r' || e.key === 'b' || e.key === 'l') {
+        e.preventDefault()
+        setTerminalInput(prev => prev + e.key)
 
-    window.addEventListener('click', handleClick)
+        if (inputRef.current) {
+          inputRef.current.focus()
+        }
+      }
+    }
+    document.addEventListener('keypress', handleKeyPress)
     return () => {
-      window.removeEventListener('click', handleClick)
+      document.removeEventListener('keypress', handleKeyPress)
     }
   }, [])
+
 
 
   const LoadingDots = (
@@ -62,23 +70,61 @@ export default function Home() {
     ])
   })
 
-  useEffect(() => {
+  const handleLogStream = () => {
+    if (watcherRef.current) {
+      console.log('Log stream already active.')
+      return
+    }
+
+    appendTerminalOutput('Log streaming enabled.')
+    setLogsActive(true)
+
     const unwatch = websocketClient.watchEvent({
       address: CONTRACT_ADDRESS,
-      onLogs: (logs) => { console.log(logs); handleLogs(logs) },
+      onLogs: (logs) => {
+        console.log(logs)
+        handleLogs(logs)
+      },
       onError: (e) => {
-        console.error('Error watching logs:', e)
+        console.error('Log stream error:', e)
+        appendTerminalOutput('Log stream disconnected. Attempting reconnect...')
+        setLogsActive(false)
+
+        if (watcherRef.current) {
+          watcherRef.current()
+          watcherRef.current = null
+        }
       }
     })
 
-    // unwatch on component unmount
+    watcherRef.current = unwatch
+  }
+
+  const stopLogStream = () => {
+    if (watcherRef.current) {
+      watcherRef.current()
+      watcherRef.current = null
+      appendTerminalOutput('Log streaming disabled.')
+      setLogsActive(false)
+    }
+  }
+
+
+  useEffect(() => {
+    handleLogStream()
+
     return () => {
-      unwatch()
+      if (watcherRef.current) {
+        watcherRef.current()
+        watcherRef.current = null
+      }
+      setLogsActive(false)
+      appendTerminalOutput('Log streaming disabled.')
     }
   }, [])
 
+
   const handleLogs = async (event: any) => {
-    if (!logsActive) return
     const parsedLogs = parseEventLogs({
       logs: event,
       abi: foundnoneVrfAbi,
@@ -272,8 +318,11 @@ export default function Home() {
     } else if (input === 'clear') {
       setTerminalOutput([])
     } else if (input === 'logs') {
-      appendTerminalOutput(`Log streaming ${logsActive ? 'disabled' : 'enabled'}.`)
-      setLogsActive(!logsActive)
+      if (logsActive) {
+        stopLogStream()
+      } else {
+        handleLogStream()
+      }
     } else {
       appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
     }
