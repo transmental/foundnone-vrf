@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPublicClient, createWalletClient, custom, http, parseEventLogs, WalletClient } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import foundnoneVrfAbi from './abi/foundnone-vrf.json'
@@ -17,6 +17,20 @@ export default function Home() {
   const [initializing, setInitializing] = useState(true)
   const [terminalInput, setTerminalInput] = useState<string>('')
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleClick = () => {
+      inputRef.current?.focus()
+    }
+
+    window.addEventListener('click', handleClick)
+    return () => {
+      window.removeEventListener('click', handleClick)
+    }
+  }, [])
+
 
   const LoadingDots = (
     <span className="animate-pulse">
@@ -38,7 +52,6 @@ export default function Home() {
   }, [client, account, rand])
 
   async function updateBalances() {
-    if (!contractBalance) setInitializing(true)
     try {
       const contractFullBalance = await publicClient.getBalance({
         address: CONTRACT_ADDRESS,
@@ -170,7 +183,7 @@ export default function Home() {
     setTerminalOutput(prev => [...prev, line])
   }
 
-  function handleTerminalCommand(e: React.FormEvent<HTMLFormElement>) {
+  async function handleTerminalCommand(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const input = terminalInput.trim().toLowerCase()
 
@@ -180,6 +193,12 @@ export default function Home() {
       connectWallet()
     } else if (input === 'rng' || input === 'request rng') {
       requestRng()
+    } else if (input === 'balance') {
+      await updateBalances()
+      if (contractBalance && fulfillerBalance) {
+        appendTerminalOutput(`Contract balance: ${contractBalance} wei`)
+        appendTerminalOutput(`Fulfiller balance: ${fulfillerBalance} wei`)
+      }
     } else if (input === 'clear') {
       setTerminalOutput([])
     } else {
@@ -191,7 +210,7 @@ export default function Home() {
   return (
     <div className="flex items-center justify-center h-screen w-full bg-[#14101e] no-scrollbar break-all">
       <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[800px] h-[600px] flex flex-col no-scrollbar">
-        <div className="mb-4">
+        <div className="mb-4 flex flex-col items-start justify-center gap-2">
           <h1 className="text-2xl font-bold mb-2">Foundnone VRF</h1>
           <p className="text-sm">A verifiable random number generator for Ethereum.</p>
           <p className="text-sm">
@@ -206,16 +225,7 @@ export default function Home() {
             Connect with me:
             <a href={`https://x.com/transmental`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://x.com/transmental`}</a>
           </p>
-
         </div>
-        {fulfillerBalance && contractBalance && (
-          <div>
-            &gt; Contract fee balance: {parseInt(contractBalance) / 1e18} ETH
-            <br />
-            &gt; Aggregate fulfiller balance: {parseInt(fulfillerBalance) / 1e18} ETH
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto mb-4 space-y-2 no-scrollbar">
           {terminalOutput.map((line, idx) => (
             <div key={idx}>{line}</div>
@@ -234,13 +244,16 @@ export default function Home() {
         <form onSubmit={handleTerminalCommand} className="flex">
           <span className="mr-2">&gt;</span>
           <input
+            ref={inputRef}
             type="text"
             className="flex-1 bg-black text-green-400 outline-none"
             value={terminalInput}
             onChange={(e) => setTerminalInput(e.target.value)}
             autoFocus
           />
+
         </form>
+        <p className="text-sm">Type `connect` to connect or switch wallets, and `rng` to request a random number.</p>
       </div>
     </div>
   )
