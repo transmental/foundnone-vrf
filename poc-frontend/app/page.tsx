@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { createPublicClient, createWalletClient, custom, http, parseEventLogs, WalletClient } from 'viem'
+import { createPublicClient, createWalletClient, custom, fallback, http, parseEventLogs, WalletClient, webSocket } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
@@ -17,19 +17,36 @@ export default function Home() {
   const [initializing, setInitializing] = useState(true)
   const [terminalInput, setTerminalInput] = useState<string>('')
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+  const [logsActive, setLogsActive] = useState(true)
 
   const inputRef = useRef<HTMLInputElement>(null)
+  const watcherRef = useRef<() => void | null>(null)
 
   useEffect(() => {
-    const handleClick = () => {
-      inputRef.current?.focus()
+    const terminal = document.getElementById('terminal')
+    if (terminal) {
+      terminal.scrollTop = terminal.scrollHeight
     }
+  }, [terminalOutput])
 
-    window.addEventListener('click', handleClick)
+  useEffect(() => {
+    // just capture any keypresses and focus the input
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'c' || e.key === 'r' || e.key === 'b' || e.key === 'l') {
+        e.preventDefault()
+        setTerminalInput(prev => prev + e.key)
+
+        if (inputRef.current) {
+          inputRef.current.focus()
+        }
+      }
+    }
+    document.addEventListener('keypress', handleKeyPress)
     return () => {
-      window.removeEventListener('click', handleClick)
+      document.removeEventListener('keypress', handleKeyPress)
     }
   }, [])
+
 
 
   const LoadingDots = (
@@ -44,6 +61,102 @@ export default function Home() {
     chain: baseSepolia,
     transport: http(),
   })
+
+  const websocketClient = createPublicClient({
+    chain: baseSepolia,
+    transport: fallback([
+      webSocket('wss://base-sepolia.drpc.org'),
+      webSocket('wss://base-sepolia-rpc.publicnode.com')
+    ])
+  })
+
+  const handleLogStream = () => {
+    if (watcherRef.current) {
+      console.log('Log stream already active.')
+      return
+    }
+
+    appendTerminalOutput('Log streaming enabled.')
+    setLogsActive(true)
+
+    const unwatch = websocketClient.watchEvent({
+      address: CONTRACT_ADDRESS,
+      onLogs: (logs) => {
+        console.log(logs)
+        handleLogs(logs)
+      },
+      onError: (e) => {
+        console.error('Log stream error:', e)
+        appendTerminalOutput('Log stream disconnected. Attempting reconnect...')
+        setLogsActive(false)
+
+        if (watcherRef.current) {
+          watcherRef.current()
+          watcherRef.current = null
+        }
+      }
+    })
+
+    watcherRef.current = unwatch
+  }
+
+  const stopLogStream = () => {
+    if (watcherRef.current) {
+      watcherRef.current()
+      watcherRef.current = null
+      appendTerminalOutput('Log streaming disabled.')
+      setLogsActive(false)
+    }
+  }
+
+
+  useEffect(() => {
+    handleLogStream()
+
+    return () => {
+      if (watcherRef.current) {
+        watcherRef.current()
+        watcherRef.current = null
+      }
+      setLogsActive(false)
+      appendTerminalOutput('Log streaming disabled.')
+    }
+  }, [])
+
+
+  const handleLogs = async (event: any) => {
+    const parsedLogs = parseEventLogs({
+      logs: event,
+      abi: foundnoneVrfAbi,
+    }) as any;
+
+    console.log('Parsed logs:', parsedLogs)
+
+    const name = parsedLogs[0].eventName
+    const args = parsedLogs[0].args
+
+    console.log({ name, args })
+    switch (name) {
+      case 'RngRequested': {
+        const requestId = args.requestId
+        appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
+        break;
+      }
+      case 'RequestFulfilled':
+        {
+          const requestId = args.requestId
+          const proof = args.proof
+          const publicInputs = args.publicInputs
+          appendTerminalOutput(`RNG fulfilled for request ID: ${requestId}`)
+          appendTerminalOutput(`Entropy: ${publicInputs[1]}`)
+          appendTerminalOutput(`Proof: ${proof}`)
+          appendTerminalOutput(`Public Inputs: ${publicInputs}`)
+          break;
+        }
+      default:
+        break
+    }
+  }
 
   useEffect(() => {
     if (client) {
@@ -133,8 +246,10 @@ export default function Home() {
         eventName: 'RngRequested',
       })[0] as any
       const requestId = parsedLogs.args.requestId
-      appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
-      await pullForEntropy(requestId)
+      if (!logsActive) {
+        appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
+        await pullForEntropy(requestId)
+      }
     } catch (error) {
       console.error('Error requesting RNG:', error)
       appendTerminalOutput('Error requesting RNG.')
@@ -144,6 +259,7 @@ export default function Home() {
   }
 
   async function pullForEntropy(requestId: string) {
+    if (logsActive) return;
     await new Promise(resolve => setTimeout(resolve, 3000))
     let tries = 0
     while (tries < 10) {
@@ -201,6 +317,12 @@ export default function Home() {
       }
     } else if (input === 'clear') {
       setTerminalOutput([])
+    } else if (input === 'logs') {
+      if (logsActive) {
+        stopLogStream()
+      } else {
+        handleLogStream()
+      }
     } else {
       appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
     }
@@ -209,10 +331,10 @@ export default function Home() {
 
   return (
     <div className="flex items-center justify-center h-screen w-full bg-[#14101e] no-scrollbar break-all">
-      <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[800px] h-[600px] flex flex-col no-scrollbar">
-        <div className="mb-4 flex flex-col items-start justify-center gap-2">
+      <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[1200px] h-[600px] flex flex-col no-scrollbar">
+        <div className="mb-2 flex flex-col items-start justify-center gap-2">
           <h1 className="text-2xl font-bold mb-2">Foundnone VRF</h1>
-          <p className="text-sm">A verifiable random number generator for Ethereum.</p>
+          <p className="text-sm">A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.</p>
           <p className="text-sm">
             This is a test implementation on BASE SEPOLIA with contract address:
             <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
@@ -226,7 +348,7 @@ export default function Home() {
             <a href={`https://x.com/transmental`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://x.com/transmental`}</a>
           </p>
         </div>
-        <div className="flex-1 overflow-y-auto mb-4 space-y-2 no-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-1 no-scrollbar scroll-auto border-t-1 border-x-1 px-1 border-green-400" id="terminal">
           {terminalOutput.map((line, idx) => (
             <div key={idx}>{line}</div>
           ))}
@@ -241,7 +363,7 @@ export default function Home() {
           )}
         </div>
 
-        <form onSubmit={handleTerminalCommand} className="flex">
+        <form onSubmit={handleTerminalCommand} className="flex border-b-1 border-x-1 px-1 border-green-400">
           <span className="mr-2">&gt;</span>
           <input
             ref={inputRef}
@@ -253,7 +375,7 @@ export default function Home() {
           />
 
         </form>
-        <p className="text-sm">Type `connect` to connect or switch wallets, and `rng` to request a random number.</p>
+        <p className="text-sm mt-2">Type `connect` to connect or switch wallets, `rng` to request a random number, `balance` to check contract balances, or `logs` to toggle log streaming on and off.</p>
       </div>
     </div>
   )

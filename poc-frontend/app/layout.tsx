@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Foundnone VRF",
-  description: "A democratized and provably random number generator for Ethereum.",
+  description: "A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.",
   openGraph: {
     title: "Foundnone VRF",
-    description: "A democratized and provably random number generator for Ethereum.",
+    description: "A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.",
     url: "https://vrf.foundnone.xyz",
     images: [
       {
