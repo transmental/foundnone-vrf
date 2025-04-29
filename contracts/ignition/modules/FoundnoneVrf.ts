@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const EntropyLogModule = buildModule("EntropyLogModule", (m) => {
+const FoundnoneVrfModule = buildModule("FoundnoneVrfModule", (m) => {
   const admin = m.getParameter("admin", "0x230988f9ab3019F100Ad6bb50723bE27dd9783E3");
 
   const entropyLog = m.contract("FoundnoneVRF", [admin]);
@@ -8,4 +8,4 @@ const EntropyLogModule = buildModule("EntropyLogModule", (m) => {
   return { entropyLog };
 });
 
-export default EntropyLogModule;
+export default FoundnoneVrfModule;
