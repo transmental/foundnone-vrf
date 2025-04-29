@@ -209,10 +209,10 @@ export default function Home() {
 
   return (
     <div className="flex items-center justify-center h-screen w-full bg-[#14101e] no-scrollbar break-all">
-      <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[800px] h-[600px] flex flex-col no-scrollbar">
+      <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[1200px] h-[600px] flex flex-col no-scrollbar">
         <div className="mb-4 flex flex-col items-start justify-center gap-2">
           <h1 className="text-2xl font-bold mb-2">Foundnone VRF</h1>
-          <p className="text-sm">A verifiable random number generator for Ethereum.</p>
+          <p className="text-sm">A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.</p>
           <p className="text-sm">
             This is a test implementation on BASE SEPOLIA with contract address:
             <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
@@ -253,7 +253,7 @@ export default function Home() {
           />
 
         </form>
-        <p className="text-sm">Type `connect` to connect or switch wallets, and `rng` to request a random number.</p>
+        <p className="text-sm">Type `connect` to connect or switch wallets, `rng` to request a random number, or `balance` to check contract balances.</p>
       </div>
     </div>
   )
