@@ -2,6 +2,10 @@
 
 A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards.
 
+# Deployed Addresses: 
+- Base Sepolia: `0x1ec945E267CF78c53306d48D89f2cdb500026811`
+- Base: `pending further testing...`
+
 # Quick Start
 
 ## Environment Variables
@@ -13,8 +17,8 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 WS_RPC_URL=ws://...
 HTTP_RPC_URL=http://...
 
-# Deployed FoundnoneVRF contract address
-CONTRACT_ADDRESS=0x...
+# Deployed FoundnoneVRF contract address on Base Sepolia
+CONTRACT_ADDRESS=0x1ec945E267CF78c53306d48D89f2cdb500026811
 
 # Private key of the ENTROPY_ROLE (do not prefix with 0x)
 FULFILLER_PK=...
