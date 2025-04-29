@@ -11,10 +11,20 @@ export default function Home() {
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
   const [rand, setRand] = useState<string | null>(null)
-  const [words, setWords] = useState<string[]>([])
   const [contractBalance, setContractBalance] = useState<string | null>(null)
   const [fulfillerBalance, setFulfillerBalance] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initializing, setInitializing] = useState(true)
+  const [terminalInput, setTerminalInput] = useState<string>('')
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+
+  const LoadingDots = (
+    <span className="animate-pulse">
+      <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+      <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+      <span className="inline-block w-2 h-2 bg-green-400 rounded-full"></span>
+    </span>
+  )
 
   const publicClient = createPublicClient({
     chain: baseSepolia,
@@ -28,24 +38,32 @@ export default function Home() {
   }, [client, account, rand])
 
   async function updateBalances() {
-    const contractFullBalance = await publicClient.getBalance({
-      address: CONTRACT_ADDRESS,
-    });
-    const contractFeeBalance = await publicClient.readContract({
-      address: CONTRACT_ADDRESS,
-      abi: foundnoneVrfAbi,
-      functionName: 'contractFeeBalance',
-    }) as any;
-
-    const aggregateFulfillerBalance = BigInt(contractFullBalance.toString()) - BigInt(contractFeeBalance.toString())
-    setContractBalance(contractFeeBalance.toString())
-    setFulfillerBalance(aggregateFulfillerBalance.toString())
-
+    if (!contractBalance) setInitializing(true)
+    try {
+      const contractFullBalance = await publicClient.getBalance({
+        address: CONTRACT_ADDRESS,
+      })
+      const contractFeeBalance = await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: foundnoneVrfAbi,
+        functionName: 'contractFeeBalance',
+      }) as any
+      const aggregateFulfillerBalance = BigInt(contractFullBalance.toString()) - BigInt(contractFeeBalance.toString())
+      setContractBalance(contractFeeBalance.toString())
+      setFulfillerBalance(aggregateFulfillerBalance.toString())
+    } catch (e) {
+      console.error('Error updating balances:', e)
+    } finally {
+      setInitializing(false)
+    }
   }
 
   async function connectWallet() {
     const provider = (window as any).ethereum
-    if (!provider) return
+    if (!provider) {
+      appendTerminalOutput('No wallet provider found.')
+      return
+    }
 
     if (account) {
       await provider.request({
@@ -69,10 +87,14 @@ export default function Home() {
       account: acc,
     })
     setClient(walletClient)
+    appendTerminalOutput(`Connected wallet: ${acc}`)
   }
 
   async function requestRng() {
-    if (!client || !account) return
+    if (!client || !account) {
+      appendTerminalOutput('Connect wallet first.')
+      return
+    }
     setLoading(true)
     try {
       const vrfFee = await publicClient.readContract({
@@ -98,32 +120,19 @@ export default function Home() {
         eventName: 'RngRequested',
       })[0] as any
       const requestId = parsedLogs.args.requestId
-      console.log('requestId', requestId)
+      appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
       await pullForEntropy(requestId)
     } catch (error) {
       console.error('Error requesting RNG:', error)
+      appendTerminalOutput('Error requesting RNG.')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    if (!rand) return
-    const WORD_COUNT = 8
-    const hex = BigInt(rand).toString(16)
-    const bits = hex.padStart(WORD_COUNT * 4, '0')
-    const chunkSize = bits.length / WORD_COUNT
-    const w = Array.from({ length: WORD_COUNT }, (_, i) => {
-      const slice = bits.slice(i * chunkSize, (i + 1) * chunkSize)
-      const idx = parseInt(slice, 16) % wordlists.english.length
-      return wordlists.english[idx]
-    })
-    setWords(w)
-  }, [rand])
-
   async function pullForEntropy(requestId: string) {
-    Promise.resolve(() => new Promise(resolve => setTimeout(resolve, 3000)))
-    let tries = 0;
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    let tries = 0
     while (tries < 10) {
       const rng = await publicClient.readContract({
         address: CONTRACT_ADDRESS,
@@ -133,6 +142,9 @@ export default function Home() {
       })
       if (rng) {
         setRand(rng.toString())
+        appendTerminalOutput(`Entropy received: ${rng.toString()}`)
+        appendTerminalOutput(`Mod 100,000 / 100,000: ${(parseInt(rng.toString()) % 100000) / 100000}`)
+        appendTerminalOutput(randomWords(rng.toString()))
         break
       }
       tries++
@@ -140,42 +152,96 @@ export default function Home() {
     }
   }
 
+  const randomWords = (entropy: string) => {
+    if (!entropy) return 'Error generating random words.'
+    const WORD_COUNT = 8
+    const hex = BigInt(entropy).toString(16)
+    const bits = hex.padStart(WORD_COUNT * 4, '0')
+    const chunkSize = bits.length / WORD_COUNT
+    const w = Array.from({ length: WORD_COUNT }, (_, i) => {
+      const slice = bits.slice(i * chunkSize, (i + 1) * chunkSize)
+      const idx = parseInt(slice, 16) % wordlists.english.length
+      return wordlists.english[idx]
+    })
+    return `Random words: ${w.join(' ')}`
+  }
+
+  function appendTerminalOutput(line: string) {
+    setTerminalOutput(prev => [...prev, line])
+  }
+
+  function handleTerminalCommand(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const input = terminalInput.trim().toLowerCase()
+
+    appendTerminalOutput(`> ${input}`)
+
+    if (input === 'connect') {
+      connectWallet()
+    } else if (input === 'rng' || input === 'request rng') {
+      requestRng()
+    } else if (input === 'clear') {
+      setTerminalOutput([])
+    } else {
+      appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
+    }
+    setTerminalInput('')
+  }
+
   return (
-    <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-full h-screen">
-      <div className="mb-4">
-        {account ? (
-          <div className='cursor-pointer' onClick={connectWallet}>&gt; Connected account: {account}</div>
-        ) : (
-          <div className='cursor-pointer' onClick={connectWallet}>&gt; Connect Wallet</div>
+    <div className="flex items-center justify-center h-screen w-full bg-[#14101e] no-scrollbar break-all">
+      <div className="bg-black text-green-400 font-mono p-6 rounded-lg shadow-inner w-auto max-w-[800px] h-[600px] flex flex-col no-scrollbar">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold mb-2">Foundnone VRF</h1>
+          <p className="text-sm">A verifiable random number generator for Ethereum.</p>
+          <p className="text-sm">
+            This is a test implementation on BASE SEPOLIA with contract address:
+            <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
+          </p>
+          <p className="text-sm">
+            Codebase:
+            <a href={`https://github.com/transmental/foundnone-vrf`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://github.com/transmental/foundnone-vrf`}</a>
+          </p>
+          <p className="text-sm">
+            Connect with me:
+            <a href={`https://x.com/transmental`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://x.com/transmental`}</a>
+          </p>
+
+        </div>
+        {fulfillerBalance && contractBalance && (
+          <div>
+            &gt; Contract fee balance: {parseInt(contractBalance) / 1e18} ETH
+            <br />
+            &gt; Aggregate fulfiller balance: {parseInt(fulfillerBalance) / 1e18} ETH
+          </div>
         )}
+
+        <div className="flex-1 overflow-y-auto mb-4 space-y-2 no-scrollbar">
+          {terminalOutput.map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+
+
+          {initializing && (
+            <div>&gt; Type {'connect'} to get started {LoadingDots}</div>
+          )}
+
+          {loading && (
+            <div>&gt; {LoadingDots}</div>
+          )}
+        </div>
+
+        <form onSubmit={handleTerminalCommand} className="flex">
+          <span className="mr-2">&gt;</span>
+          <input
+            type="text"
+            className="flex-1 bg-black text-green-400 outline-none"
+            value={terminalInput}
+            onChange={(e) => setTerminalInput(e.target.value)}
+            autoFocus
+          />
+        </form>
       </div>
-
-      {contractBalance && fulfillerBalance && (
-        <div className="mb-4">
-          <div>&gt; Aggregate Fulfiller Balance: {(parseInt(fulfillerBalance) / 1e18).toFixed(6)} ETH</div>
-          <div>&gt; Contract Fee Balance: {(parseInt(contractBalance) / 1e18).toFixed(6)} ETH</div>
-        </div>
-      )}
-
-      <div className="mb-4">
-        {account && (
-          <div className="mt-1">&gt; <button className='cursor-pointer' onClick={requestRng}>Request RNG</button></div>
-        )}
-      </div>
-
-
-      {rand && !loading && (
-        <div className="mb-4">
-          <div className='wrap-anywhere'>&gt; Entropy: {rand}</div>
-          <div>&gt; Mod 100,000 / 100,000: {(parseInt(rand) % 100000) / 100000}</div>
-          <div>&gt; Random words: {words.join(' ')}</div>
-        </div>
-      )}
-      {loading && (
-        <div className="mb-4">
-          <div>&gt; Loading...</div>
-        </div>
-      )}
     </div>
   )
 }

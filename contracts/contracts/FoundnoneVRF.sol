@@ -8,14 +8,14 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
  * @title FoundnoneVRF
  * @author Zachary Owens (foundnone.eth)
  * @notice A democratized VRF that allows anyone to request entropy as well as fulfill entropy requests for a reward.
- * @notice This contract will refer to the msg.sender as the fulfiller and the address that will receive the reward as the rewardReceiver.
+ * @notice This contract will refer to the msg.sender as the fulfiller and the address that will receive the reward as the rewardReceiver. Allowing the the fulfiller address to be separate from the rewardReceiver address.
  * @dev Entropy emitted by this contract is verified by the PlonkVerifier before being stored in the contract.
- * @dev This allows the reward receiver to be different from the fulfiller.
- * @dev To avoid spoofing, the contract requires a predetermined commitment to be passed in by the fulfiller.
+ * @dev To avoid brute forcing a desired outcome, the contract requires a predetermined commitment to be passed in by the fulfiller.
  * @dev This commitment is used as a public input to the PlonkVerifier and is used to verify the proof.
  * @dev The commitment is the hash of a secret that the fulfiller must use when generating the next entropy.
- * @dev Additionally, the seed of the request must always match the keccak256(requestId, msg.sender) hash.
- * @dev Since all public inputs are constrained, and the pre-hash commitment is predetermined, we can trust that the entropy (if valid) is properly generated and not tampered with.
+ * @dev Additionally, the seed of the request must always match the keccak256(requestId, msg.sender, blockhash(requestBlockSet[_requestId])) hash.
+ * @dev The requestBlockSet is set to the blockNumber - 1 to ensure that the request is valid within the same block as the request.
+ * @dev Since all public inputs are constrained, and the commitment is predetermined, we can trust that the entropy (if valid) is properly generated and not tampered with.
  */
 
 contract FoundnoneVRF is PlonkVerifier, AccessControl {
@@ -142,6 +142,18 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param newFee The new fee
      */
     event RequestFeeUpdated(uint256 newFee);
+
+    /**
+     * @notice Event emitted when a request is refunded
+     * @param requestId The requestId of the request
+     * @param requester The address of the requester
+     * @param amount The amount refunded
+     */
+    event RequestRefunded(
+        uint256 indexed requestId,
+        address indexed requester,
+        uint256 amount
+    );
 
     /**
      * @notice Event emitted when the contract fee percentage is updated
@@ -345,6 +357,14 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             revert InvalidRequester();
         }
         payable(msg.sender).transfer(requestFeePaid[_requestId]);
+        delete requesters[_requestId];
+        delete requestBlockSet[_requestId];
+        delete requestFeePaid[_requestId];
+        emit RequestRefunded(
+            _requestId,
+            msg.sender,
+            requestFeePaid[_requestId]
+        );
     }
 
     /**

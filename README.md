@@ -1,8 +1,8 @@
 # Foundnone VRF
 
-A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests on-chain for rewards.
+A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards.
 
-# Quick Start With Docker
+# Quick Start
 
 ## Environment Variables
 
@@ -43,7 +43,7 @@ docker build --no-cache -t foundnone-vrf-fulfiller .
 docker run --name foundnone-vrf-fulfiller --env-file fulfiller/.env foundnone-vrf-fulfiller
 ```
 
-## Request Entropy
+## Requesting Entropy
 
 Call the `requestRng` function on the `FoundnoneVRF` contract. This will emit a `RngRequested` event with the request ID.
 
@@ -60,8 +60,8 @@ npm run dev
 # Key Features
 
 - **Open Fulfillment**: Anyone can run a fulfiller to process VRF requests and earn rewards.
-- **Plonk-Based Verification**: On-chain proof verification via a Plonk verifier.
-- **Commitment Scheme**: Uses a predetermined Poseidon-based commitment to prevent spoofing.
+- **Plonk-Based Verification**: Onchain proof verification via Plonk verification. `/contracts/contracts/PlonkVerifier.sol`.
+- **Commitment Scheme**: Enforces a predetermined Poseidon-based fulfiller commitment to prevent brute forcing desired outcomes.
 - **Separate Reward Receiver**: Fulfillers can allocate rewards to a distinct address.
 - **Trusted Setup**: Reliably generated via a reputable Phase 2 Ptau file.
 
@@ -71,6 +71,7 @@ Uses the Zcash Phase 2 Powers of Tau ceremony artifacts from the Privacy Scalin
 
 - **Source**: https://github.com/privacy-scaling-explorations/perpetualpowersoftau
 - **File**: `ppot_0080_11.ptau` (11th-degree, 2,048 Points file)
+- **Proof System Assumptions**: Security relies on the Plonk trusted setup (via Phase 2 Ptau). Assumes no participant compromised the Powers of Tau ceremony.
 
 This Phase 2 file was used to generate the circuit zkey (`fulfiller/zk/vrf_final.zkey`).
 
@@ -82,14 +83,28 @@ Each fulfiller generates a secret `s` and computes a Poseidon hash
 commitment = Poseidon([s, 0])
 ```
 
-This `commitment` is set on-chain before processing requests. Every proof must include the previous commitment as a public input, binding the entropy generation to the fulfiller’s secret and preventing replay or spoofing.
+This `commitment` is set onchain before processing requests. Every proof must include the previous commitment as a public input, binding the entropy generation to the fulfiller’s secret and preventing replay or spoofing.
+
+## Fulfiller Rewards
+
+- Fulfillers earn (100 - contractFeePercentage)% of the request fee.
+- Contract retains contractFeePercentage% as platform fees.
+- Fulfillers claim their rewards manually via the `withdrawRewardReceiverBalance` function (this should be called by the PAYOUT_ADDRESS specified in the fulfiller service .env file).
+
+## Unfulfilled Requests
+
+- Requests not fulfilled within 256 blocks are considered invalid and can be refunded.
+- This is due to the fact that the blockhash of the block - 1 of the request is used as a part of the seed during entropy generation.
+- We use the block - 1 blockhash to ensure that fulfillment can still be made inside of the same block as the request.
+- Refunds are processed via the `refundUnfulfilledRequest` function, which returns the full request fee to the sender (the contract fee is not taken until fulfillment).
 
 ## Why Foundnone VRF is Different
 
 - **Decentralized Fulfillment**: No single oracle—anyone can run a fulfiller service.
-- **Gas Efficiency**: PLONK verifier instead of Groth16, reducing verifier gas to a fraction of other implementations.
-- **Extra Flexibility**: Reward allocation and commitment rotation on each fulfillment.
-- **Full Transparency**: Open-source prover pipeline and Dockerized deployment.
+- **Fulfiller Incentivization**: Earn rewards for fulfilling requests.
+- **Speed and Efficiency**: Fast and efficient onchain verification, proof to fulfillment times can be under 3 seconds depending on network congestion and fulfillers hardware.
+- **Competitive Fulfillment**: Fulfiller rewards are based on the number of requests processed.
+- **Full Transparency and Easy Setup**: Open-source prover pipeline and Dockerized deployment.
 
 ## Repository Structure
 
@@ -141,3 +156,104 @@ This will transfer the rewards to that address.
 ## License
 
 MIT © 2025 Zachary Owens
+
+# Glossary
+
+| Term                                 | Definition                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| **VRF (Verifiable Random Function)** | A cryptographic function that produces random outputs along with a proof that the output was correctly generated.              |
+| **Entropy**                          | The random output generated by the VRF, stored onchain after successful proof verification.                                    |
+| **Fulfillment**                      | The act of submitting a valid proof and entropy for an open VRF request.                                                       |
+| **Commitment**                       | A Poseidon hash of a secret known only to the fulfiller, submitted to the contract to prevent precomputing favorable outcomes. |
+| **Plonk**                            | A zk-SNARK proof system used for efficient onchain verification of entropy proofs.                                             |
+| **Poseidon Hash**                    | A zkSNARK-optimized cryptographic hash function used to create commitments efficiently in zero-knowledge circuits.             |
+| **Phase 2 Powers of Tau**            | A publicly verifiable trusted setup ceremony used to generate parameters necessary for zk-SNARK circuits.                      |
+| **Request Fee**                      | The amount of ETH paid to submit a VRF request. Split between the fulfiller and the protocol.                                  |
+| **Reward Receiver**                  | The address designated by a fulfiller to receive rewards from fulfilled requests.                                              |
+| **Contract Fee Percentage**          | The percentage of each request fee that is retained by the contract for operational purposes.                                  |
+| **Request ID**                       | A unique identifier for each VRF entropy request.                                                                              |
+| **Blockhash**                        | The hash of a recent block, used as an unpredictable seed in entropy generation.                                               |
+| **Fulfiller**                        | An entity that runs the prover and submits entropy proofs to the Foundnone VRF contract for rewards.                           |
+
+# FAQ
+
+## ❓ What is Foundnone VRF?
+
+Foundnone VRF is a decentralized Verifiable Random Function system that allows anyone to request and fulfill randomness (entropy) onchain, with provable validity via zero-knowledge proofs (Plonk).
+
+---
+
+## ❓ How do I request random entropy?
+
+Call the `requestRng` function on the FoundnoneVRF contract while sending at least the required `requestFee` in ETH.  
+Listen for the `RngRequested` event or poll `entropies[_requestId]` to retrieve the result after fulfillment.
+
+---
+
+## ❓ How do I run a fulfiller and earn rewards?
+
+1. Set up a `.env` file with RPCs, private key, contract address, and payout address.
+2. Build the Docker image and run the fulfiller service.
+3. The service listens for new requests and submits proofs to earn rewards.
+
+---
+
+## ❓ What is the purpose of the commitment?
+
+The commitment prevents fulfillers from brute-forcing favorable entropy.  
+Each fulfiller must set a Poseidon hash commitment onchain before fulfilling any requests, binding their prover to a specific secret.
+
+---
+
+## ❓ How are rewards distributed?
+
+When a fulfiller submits a valid proof:
+
+- `(100 - contractFeePercentage)%` of the request fee is credited to their designated reward receiver address.
+- `contractFeePercentage%` goes to the contract’s operational balance.
+
+Fulfillers must call `withdrawRewardReceiverBalance()` to redeem accumulated rewards.
+
+---
+
+## ❓ What happens if a request is not fulfilled?
+
+Requests are only valid for approximately 256 blocks (~1 hour depending on the chain).  
+If not fulfilled within that window, requesters can call `refundUnfulfilledRequest(requestId)` to reclaim their full request fee.
+
+---
+
+## ❓ Can multiple fulfillers compete to fulfill a request?
+
+Yes.  
+Anyone can attempt to fulfill a request.  
+The first valid proof submitted wins the reward for that request.
+
+---
+
+## ❓ What if the blockhash needed for fulfillment expires?
+
+If more than 256 blocks pass, the blockhash is no longer retrievable.  
+In that case, fulfillment becomes impossible, and the requester must manually refund the request.
+
+---
+
+## ❓ How secure is the trusted setup?
+
+The Plonk zk-SNARK system used by Foundnone VRF relies on the security of the Phase 2 Powers of Tau ceremony.  
+We use artifacts from a reputable source (Privacy Scaling Explorations), assuming no participant in the ceremony colluded to compromise it.
+
+---
+
+## ❓ Can I modify the circuit or the zk artifacts?
+
+Yes, but you must regenerate the `.zkey` and `.wasm` artifacts located in `fulfiller/zk/`.  
+If the circuit changes, proofs generated using outdated artifacts will fail verification.
+
+---
+
+## ❓ Is there a limit to how many fulfillers can run simultaneously?
+
+No.  
+The system is open — anyone can run a fulfiller at any time.  
+Rewards are paid out competitively based on proof submissions.
