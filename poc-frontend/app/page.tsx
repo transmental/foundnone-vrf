@@ -87,7 +87,7 @@ export default function Home() {
       },
       onError: (e) => {
         console.error('Log stream error:', e)
-        appendTerminalOutput('Log stream disconnected. Attempting reconnect...')
+        appendTerminalOutput('Log stream disconnected.')
         setLogsActive(false)
 
         if (watcherRef.current) {
