@@ -110,35 +110,8 @@ This `commitment` is set onchain before processing requests. Every proof must in
 - **Competitive Fulfillment**: Fulfiller rewards are based on the number of requests processed.
 - **Full Transparency and Easy Setup**: Open-source prover pipeline and Dockerized deployment.
 
-## Repository Structure
-
-```
-.
-├── README.md
-├── circom
-│   └── vrf.circom
-├── contracts
-│   ├── contracts
-│   │   ├── FoundnoneVRF.sol
-│   │   └── PlonkVerifier.sol
-│   ├── hardhat.config.ts
-│   ├── ignition              # Deployment artifacts via Hardhat Ignition
-│   ├── test
-│   │   └── FoundnoneVRF.ts
-│   └── tsconfig.json
-├── docker-compose.yml
-├── Dockerfile
-├── fulfiller                # Go-based fulfiller service
-│   ├── abi
-│   ├── main.go
-│   ├── prover.js            # Lightweight local prover server
-│   ├── zk                   # zkey and wasm for node runtime
-│   └── go.mod/go.sum
-├── package.json             # Node.js scripts and dependencies
-└── ...
-```
-
 ## Contract Testing
+- 100% coverage of the smart contract (with full snarkjs prover pipeline) at `contracts/test/FoundnoneVRF.ts`.
 
 ```bash
 cd contracts
