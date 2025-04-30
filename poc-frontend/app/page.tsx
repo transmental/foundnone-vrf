@@ -17,7 +17,7 @@ export default function Home() {
   const [initializing, setInitializing] = useState(true)
   const [terminalInput, setTerminalInput] = useState<string>('')
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
-  const [logsActive, setLogsActive] = useState(true)
+  const [logsActive, setLogsActive] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const watcherRef = useRef<() => void | null>(null)
@@ -62,100 +62,100 @@ export default function Home() {
     transport: http(),
   })
 
-  const websocketClient = createPublicClient({
-    chain: baseSepolia,
-    transport: fallback([
-      webSocket('wss://base-sepolia.drpc.org'),
-      webSocket('wss://base-sepolia-rpc.publicnode.com')
-    ])
-  })
+  // const websocketClient = createPublicClient({
+  //   chain: baseSepolia,
+  //   transport: fallback([
+  //     webSocket('wss://base-sepolia.drpc.org'),
+  //     webSocket('wss://base-sepolia-rpc.publicnode.com')
+  //   ])
+  // })
 
-  const handleLogStream = () => {
-    if (watcherRef.current) {
-      console.log('Log stream already active.')
-      return
-    }
+  // const handleLogStream = () => {
+  //   if (watcherRef.current) {
+  //     console.log('Log stream already active.')
+  //     return
+  //   }
 
-    appendTerminalOutput('Log streaming enabled.')
-    setLogsActive(true)
+  //   appendTerminalOutput('Log streaming enabled.')
+  //   setLogsActive(true)
 
-    const unwatch = websocketClient.watchEvent({
-      address: CONTRACT_ADDRESS,
-      onLogs: (logs) => {
-        console.log(logs)
-        handleLogs(logs)
-      },
-      onError: (e) => {
-        console.error('Log stream error:', e)
-        appendTerminalOutput('Log stream disconnected.')
-        setLogsActive(false)
+  //   const unwatch = websocketClient.watchEvent({
+  //     address: CONTRACT_ADDRESS,
+  //     onLogs: (logs) => {
+  //       console.log(logs)
+  //       handleLogs(logs)
+  //     },
+  //     onError: (e) => {
+  //       console.error('Log stream error:', e)
+  //       appendTerminalOutput('Log stream disconnected.')
+  //       setLogsActive(false)
 
-        if (watcherRef.current) {
-          watcherRef.current()
-          watcherRef.current = null
-        }
-      }
-    })
+  //       if (watcherRef.current) {
+  //         watcherRef.current()
+  //         watcherRef.current = null
+  //       }
+  //     }
+  //   })
 
-    watcherRef.current = unwatch
-  }
+  //   watcherRef.current = unwatch
+  // }
 
-  const stopLogStream = () => {
-    if (watcherRef.current) {
-      watcherRef.current()
-      watcherRef.current = null
-      appendTerminalOutput('Log streaming disabled.')
-      setLogsActive(false)
-    }
-  }
-
-
-  useEffect(() => {
-    handleLogStream()
-
-    return () => {
-      if (watcherRef.current) {
-        watcherRef.current()
-        watcherRef.current = null
-      }
-      setLogsActive(false)
-    }
-  }, [])
+  // const stopLogStream = () => {
+  //   if (watcherRef.current) {
+  //     watcherRef.current()
+  //     watcherRef.current = null
+  //     appendTerminalOutput('Log streaming disabled.')
+  //     setLogsActive(false)
+  //   }
+  // }
 
 
-  const handleLogs = async (event: any) => {
-    const parsedLogs = parseEventLogs({
-      logs: event,
-      abi: foundnoneVrfAbi,
-    }) as any;
+  // useEffect(() => {
+  //   handleLogStream()
 
-    console.log('Parsed logs:', parsedLogs)
+  //   return () => {
+  //     if (watcherRef.current) {
+  //       watcherRef.current()
+  //       watcherRef.current = null
+  //     }
+  //     setLogsActive(false)
+  //   }
+  // }, [])
 
-    const name = parsedLogs[0].eventName
-    const args = parsedLogs[0].args
 
-    console.log({ name, args })
-    switch (name) {
-      case 'RngRequested': {
-        const requestId = args.requestId
-        appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
-        break;
-      }
-      case 'RequestFulfilled':
-        {
-          const requestId = args.requestId
-          const proof = args.proof
-          const publicInputs = args.publicInputs
-          appendTerminalOutput(`RNG fulfilled for request ID: ${requestId}`)
-          appendTerminalOutput(`Entropy: ${publicInputs[1]}`)
-          appendTerminalOutput(`Proof: ${proof}`)
-          appendTerminalOutput(`Public Inputs: ${publicInputs}`)
-          break;
-        }
-      default:
-        break
-    }
-  }
+  // const handleLogs = async (event: any) => {
+  //   const parsedLogs = parseEventLogs({
+  //     logs: event,
+  //     abi: foundnoneVrfAbi,
+  //   }) as any;
+
+  //   console.log('Parsed logs:', parsedLogs)
+
+  //   const name = parsedLogs[0].eventName
+  //   const args = parsedLogs[0].args
+
+  //   console.log({ name, args })
+  //   switch (name) {
+  //     case 'RngRequested': {
+  //       const requestId = args.requestId
+  //       appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
+  //       break;
+  //     }
+  //     case 'RequestFulfilled':
+  //       {
+  //         const requestId = args.requestId
+  //         const proof = args.proof
+  //         const publicInputs = args.publicInputs
+  //         appendTerminalOutput(`RNG fulfilled for request ID: ${requestId}`)
+  //         appendTerminalOutput(`Entropy: ${publicInputs[1]}`)
+  //         appendTerminalOutput(`Proof: ${proof}`)
+  //         appendTerminalOutput(`Public Inputs: ${publicInputs}`)
+  //         break;
+  //       }
+  //     default:
+  //       break
+  //   }
+  // }
 
   useEffect(() => {
     if (client) {
@@ -316,12 +316,12 @@ export default function Home() {
       }
     } else if (input === 'clear') {
       setTerminalOutput([])
-    } else if (input === 'logs') {
-      if (logsActive) {
-        stopLogStream()
-      } else {
-        handleLogStream()
-      }
+    // } else if (input === 'logs') {
+    //   if (logsActive) {
+    //     stopLogStream()
+    //   } else {
+    //     handleLogStream()
+    //   }
     } else {
       appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
     }
@@ -374,7 +374,7 @@ export default function Home() {
           />
 
         </form>
-        <p className="text-sm mt-2">Type `connect` to connect or switch wallets, `rng` to request a random number, `balance` to check contract balances, or `logs` to toggle log streaming on and off.</p>
+        <p className="text-sm mt-2">Type `connect` to connect or switch wallets, `rng` to request a random number, or `balance` to check contract balances.</p>
       </div>
     </div>
   )
