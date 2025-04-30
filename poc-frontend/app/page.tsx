@@ -119,7 +119,6 @@ export default function Home() {
         watcherRef.current = null
       }
       setLogsActive(false)
-      appendTerminalOutput('Log streaming disabled.')
     }
   }, [])
 
