@@ -23,83 +23,130 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	if err := run(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(ctx context.Context) error {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("config error: %v", err)
+		return fmt.Errorf("config error: %w", err)
 	}
 
-	// RPC clients
+	ws, httpc, err := dialClients(cfg)
+	if err != nil {
+		return err
+	}
+
+	auth, contract, contractAddr, err := prepareAuthAndContract(cfg, httpc)
+	if err != nil {
+		return err
+	}
+
+	secret, comm, err := ensureCommitment(ctx, httpc, auth, contract)
+	if err != nil {
+		return err
+	}
+
+	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
+	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries)
+}
+
+func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error) {
 	ws, err := ethclient.Dial(cfg.WSRPCURL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, fmt.Errorf("dial wsrpc: %w", err)
 	}
 	httpc, err := ethclient.Dial(cfg.HTTPRPCURL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, fmt.Errorf("dial httprpc: %w", err)
+	}
+	return ws, httpc, nil
+}
+
+func prepareAuthAndContract(cfg config.Config, httpc *ethclient.Client) (*bind.TransactOpts, *abi.FoundnoneVRF, common.Address, error) {
+	key, err := crypto.HexToECDSA(strings.TrimPrefix(cfg.FulfillerPK, "0x"))
+	if err != nil {
+		return nil, nil, common.Address{}, fmt.Errorf("parse private key: %w", err)
+	}
+	auth, err := bind.NewKeyedTransactorWithChainID(key, big.NewInt(cfg.ChainID))
+	if err != nil {
+		return nil, nil, common.Address{}, fmt.Errorf("new transactor: %w", err)
 	}
 
-	// auth
-	key, _ := crypto.HexToECDSA(strings.TrimPrefix(cfg.FulfillerPK, "0x"))
-	auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(cfg.ChainID))
-
-	// contract binding
 	contractAddr := common.HexToAddress(cfg.ContractAddress)
 	contract, err := abi.NewFoundnoneVRF(contractAddr, httpc)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, contractAddr, fmt.Errorf("contract binding: %w", err)
 	}
+	return auth, contract, contractAddr, nil
+}
 
-	// load or generate commitment
+func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.TransactOpts, contract *abi.FoundnoneVRF) (*big.Int, *big.Int, error) {
 	secret, comm, err := commitment.Load("zk/commitment.json")
-	if err != nil {
-		secret, comm, err = commitment.Generate()
-		if err != nil {
-			log.Fatal(err)
-		}
-		// submit initial commitment tx
-		_, err = tx.WaitMined(ctx, httpc, auth, func(a *bind.TransactOpts) (*types.Transaction, error) {
-			return contract.SetCommitment(a, comm)
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := commitment.Save("zk/commitment.json", secret, comm); err != nil {
-			log.Fatal(err)
-		}
+	if err == nil {
+		return secret, comm, nil
 	}
 
-	// subscribe to events
+	secret, comm, err = commitment.Generate()
+	if err != nil {
+		return nil, nil, fmt.Errorf("generate commitment: %w", err)
+	}
+
+	_, err = tx.SendWithRetry(ctx, httpc, auth, func(a *bind.TransactOpts) (*types.Transaction, error) {
+		return contract.SetCommitment(a, comm)
+	}, 5, 0.12, 30*time.Second)
+	if err != nil {
+		return nil, nil, fmt.Errorf("submit commitment transaction: %w", err)
+	}
+
+	if err := commitment.Save("zk/commitment.json", secret, comm); err != nil {
+		return nil, nil, fmt.Errorf("save commitment: %w", err)
+	}
+	return secret, comm, nil
+}
+
+func subscribeLoop(
+	ctx context.Context,
+	ws *ethclient.Client,
+	httpc *ethclient.Client,
+	auth *bind.TransactOpts,
+	contract *abi.FoundnoneVRF,
+	secret, comm *big.Int,
+	contractAddr, payoutAddr common.Address,
+	retries int,
+) error {
 	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
 	logs := make(chan types.Log)
 	sub, err := ws.SubscribeFilterLogs(ctx, query, logs)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("subscribe logs: %w", err)
 	}
 
-	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
-	fmt.Printf("🔄 subscribing to events on %s\n", cfg.ContractAddress)
+	fmt.Printf("🔄 subscribing to events on %s\n", contractAddr.Hex())
+
 	for {
 		select {
 		case subErr := <-sub.Err():
-			log.Printf("❌ subscription error: %v", subErr)
+			log.Printf("subscription error: %v", subErr)
 			sub.Unsubscribe()
 
 			var newSub ethereum.Subscription
-			for i := 1; i <= cfg.ConnectionRetries; i++ {
-				log.Printf("🔄 reconnect attempt %d/%d…", i, cfg.ConnectionRetries)
+			for i := 1; i <= retries; i++ {
+				log.Printf("reconnect attempt %d/%d…", i, retries)
 				newSub, err = ws.SubscribeFilterLogs(ctx, query, logs)
 				if err != nil {
-					log.Printf("❌ subscribe failed: %v", err)
+					log.Printf("subscribe failed: %v", err)
 					time.Sleep(time.Second)
 					continue
 				}
-				log.Println("✅ reconnected & resubscribed")
+				log.Println("reconnected & resubscribed")
 				sub = newSub
 				break
 			}
 			if sub == nil {
-				log.Fatalf("❌ could not reconnect after %d attempts", cfg.ConnectionRetries)
+				return fmt.Errorf("could not reconnect after %d attempts", retries)
 			}
 
 		case vLog := <-logs:
@@ -108,7 +155,7 @@ func main() {
 				continue
 			}
 			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr); err != nil {
-				log.Printf("handle error: %v", err)
+				log.Printf("HandleEvent error: %v", err)
 			}
 		}
 	}
