@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-// SuggestFees sets EIP-1559 tip and fee cap on auth
+// SuggestFees sets EIP-1559 tip and fee cap on auth and sets the nonce
 func SuggestFeesAndGetNonce(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts) error {
 	tip, err := client.SuggestGasTipCap(ctx)
 	if err != nil {
@@ -80,7 +80,6 @@ func SendWithRetry(
 	SuggestFeesAndGetNonce(ctx, client, auth)
 	var lastErr error
 	for attempt := range maxRetries {
-		fmt.Printf("GasFeeCap: %s, GasTipCap: %s\n", auth.GasFeeCap.String(), auth.GasTipCap.String())
 		rec, err := waitMinedWithTimeout(ctx, client, auth, txFunc, waitTimeout)
 		if err == nil {
 			return rec, nil
@@ -99,7 +98,7 @@ func SendWithRetry(
 		}
 		break
 	}
-	return nil, fmt.Errorf("tx failed after %d attempts: %w", maxRetries+1, lastErr)
+	return nil, fmt.Errorf("tx failed: %w", lastErr)
 }
 
 func waitMinedWithTimeout(
