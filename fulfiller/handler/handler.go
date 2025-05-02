@@ -67,32 +67,6 @@ func HandleEvent(
 		return err
 	}
 
-	// 4) pack calldata using the ABI baked into your binding
-	abiObj, err := vrfAbi.FoundnoneVRFMetaData.GetAbi()
-	if err != nil {
-		return fmt.Errorf("get ABI from metadata: %w", err)
-	}
-	data, err := abiObj.Pack(
-		"submitEntropy",
-		proofArr,
-		pubArr,
-		event.RequestId,
-		payout,
-	)
-	if err != nil {
-		return fmt.Errorf("pack submitEntropy: %w", err)
-	}
-
-	// 5) suggest fees, estimate gas, and send
-	if err := tx.SuggestFees(ctx, client, auth); err != nil {
-		return err
-	}
-	gasLimit, err := tx.EstimateGas(ctx, client, auth, contractAddress, data)
-	if err != nil {
-		return err
-	}
-	auth.GasLimit = gasLimit
-
 	receipt, err := tx.SendWithRetry(
 		ctx,
 		client,
