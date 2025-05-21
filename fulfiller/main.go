@@ -117,7 +117,7 @@ func subscribeLoop(
 	contractAddr, payoutAddr common.Address,
 	retries int,
 ) error {
-	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
+	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}, ToBlock: nil}
 	logs := make(chan types.Log)
 	sub, err := ws.SubscribeFilterLogs(ctx, query, logs)
 	if err != nil {
