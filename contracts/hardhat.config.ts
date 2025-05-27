@@ -9,11 +9,11 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   networks: {
-    baseSepolia: {
-      url: "https://sepolia.base.org",
-      accounts: [process.env.PRIVATE_KEY!],
-      chainId: 84532,
-    },
+    // baseSepolia: {
+    //   url: "https://sepolia.base.org",
+    //   accounts: [process.env.PRIVATE_KEY!],
+    //   chainId: 84532,
+    // },
   },
   solidity: {
     version: "0.8.28",
