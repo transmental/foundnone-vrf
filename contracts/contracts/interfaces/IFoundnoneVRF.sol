@@ -6,4 +6,9 @@ interface IFoundnoneVRF {
         uint256 requestId,
         uint256[] calldata entropies
     ) external;
+
+    function requestRng(
+        address callbackAddress,
+        uint32 callbackGasLimit
+    ) external payable returns (uint256);
 }

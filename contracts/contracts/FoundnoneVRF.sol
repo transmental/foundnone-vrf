@@ -21,9 +21,12 @@ import {IFoundnoneVRF} from "./interfaces/IFoundnoneVRF.sol";
  */
 
 contract FoundnoneVRF is PlonkVerifier, AccessControl {
-    struct RequestParams {
+    struct Request {
         address callbackAddress;
         uint32 callbackGasLimit;
+        uint256 requestBlockSet;
+        uint256 requestFeePaid;
+        address requester;
     }
 
     // 5k is plenty for an EXTCODESIZE call (2600) + warm CALL (100)
@@ -40,24 +43,6 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @notice A mapping to track if a request has been fulfilled and to easily retrieve the entropy
      */
     mapping(uint256 => uint256) public entropies;
-
-    /**
-     * @notice A mapping to track the block number when a request was made
-     * @dev This is used to ensure that the seed is valid and that the request is not spoofed
-     */
-    mapping(uint256 => uint256) public requestBlockSet;
-
-    /**
-     * @notice A mapping to track the requesting address of each request
-     * @dev Allows the contract to refund request fees if the request is not fulfilled
-     */
-    mapping(uint256 => address) public requesters;
-
-    /**
-     * @notice The request fee paid
-     * @dev This is used to track the fee paid for each request
-     */
-    mapping(uint256 => uint256) public requestFeePaid;
 
     /**
      * @notice The next requestId to be used
@@ -83,7 +68,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     /**
      * @notice A mapping to track the parameters of each request
      */
-    mapping(uint256 => RequestParams) public requestParams;
+    mapping(uint256 => Request) public request;
 
     /**
      * @notice A mapping to store the commitments for each fulfiller
@@ -109,6 +94,11 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @notice A mapping to track the contract fee balance
      */
     uint256 public contractFeeBalance;
+
+    /**
+     * @notice reentrancy lock active if true
+     */
+    bool reentrancyLock;
 
     /**
      * @notice Event emitted when a request is fulfilled, the fulfilling address is the fee receiver
@@ -191,6 +181,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     error RequestStillValid();
     error InvalidRequester();
     error CommitmentInUse();
+    error Reentrant();
 
     /**
      * @notice The constructor for the contract
@@ -214,7 +205,9 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         uint256[3] calldata _publicInputs,
         uint256 _requestId,
         address _rewardReceiver
-    ) external {
+    ) external nonReentrant {
+        uint256 startGas = gasleft();
+
         // verify the proof
         _verifyProof(_proof, _publicInputs, _requestId);
 
@@ -234,11 +227,13 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             _publicInputs
         );
 
+        reentrancyLock = true;
         bool success = _callWithExactGas(
-            requestParams[_requestId].callbackGasLimit,
-            requestParams[_requestId].callbackAddress,
+            request[_requestId].callbackGasLimit,
+            request[_requestId].callbackAddress,
             resp
         );
+        reentrancyLock = false;
 
         // emit the event
         emit RequestFulfilled(
@@ -309,6 +304,8 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         uint256[3] calldata _publicInputs,
         uint256 _requestId
     ) internal view {
+        Request memory _request = request[_requestId];
+
         if (_requestId >= nextRequestId) {
             revert InvalidRequestId();
         }
@@ -318,7 +315,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         if (commitments[msg.sender] != (_publicInputs[2])) {
             revert InvalidCommitment();
         }
-        if (commitmentBlockSet[msg.sender] > requestBlockSet[_requestId]) {
+        if (commitmentBlockSet[msg.sender] > _request.requestBlockSet) {
             revert InvalidCommitmentBlock();
         }
         // since the blockhash is only available for the last 256 blocks, this fulfillment is inherently invalid if the request is older than 256 blocks
@@ -326,8 +323,8 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             keccak256(
                 abi.encodePacked(
                     _requestId,
-                    requestBlockSet[_requestId],
-                    blockhash(requestBlockSet[_requestId])
+                    _request.requestBlockSet,
+                    blockhash(_request.requestBlockSet)
                 )
             )
         );
@@ -393,20 +390,32 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @dev The fee is paid in ether and is required to be sent with the request
      * @dev We subtract 1 from the block to ensure a fulfillment is valid within the same block as the request.
      */
-    function requestRng(RequestParams calldata _params) external payable {
+    function requestRng(
+        address callbackAddress,
+        uint32 callbackGasLimit
+    ) external payable returns (uint256) {
+        nextRequestId += 1;
+
         if (msg.value < requestFee) {
             revert InsufficientFee();
         }
-        requestParams[nextRequestId] = _params;
-        requestBlockSet[nextRequestId] = block.number - 1;
-        requesters[nextRequestId] = msg.sender;
-        requestFeePaid[nextRequestId] = msg.value;
+
+        request[nextRequestId] = Request({
+            callbackAddress: callbackAddress,
+            callbackGasLimit: callbackGasLimit,
+            requestBlockSet: block.number - 1,
+            requestFeePaid: msg.value,
+            requester: msg.sender
+        });
+
         emit RngRequested(
-            nextRequestId++,
+            nextRequestId,
             blockhash(block.number - 1),
             msg.sender,
             msg.value
         );
+
+        return nextRequestId;
     }
 
     /**
@@ -431,10 +440,8 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             revert InvalidRequester();
         }
         payable(msg.sender).transfer(requestFeePaid[_requestId]);
-        delete requesters[_requestId];
-        delete requestBlockSet[_requestId];
-        delete requestFeePaid[_requestId];
-        delete requestParams[_requestId];
+        delete request[_requestId];
+
         emit RequestRefunded(
             _requestId,
             msg.sender,
@@ -487,5 +494,12 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         }
         contractFeePercentage = _newPercentage;
         emit ContractFeePercentageUpdated(_newPercentage);
+    }
+
+    modifier nonReentrant() {
+        if (reentrancyLock) {
+            revert Reentrant();
+        }
+        _;
     }
 }
