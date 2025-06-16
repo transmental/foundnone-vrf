@@ -44,10 +44,10 @@ func HandleEvent(
 	if fulfilled.Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf("event already fulfilled: %s", event.RequestId)
 	}
-	fmt.Printf("Fulfilling requestID: %s\n", event.RequestId)
+
 	raw := crypto.Keccak256(
 		common.LeftPadBytes(event.RequestId.Bytes(), 32),
-		common.LeftPadBytes(new(big.Int).SetUint64(event.Raw.BlockNumber-1).Bytes(), 32),
+		common.LeftPadBytes(new(big.Int).SetUint64(event.RequestBlockSet.Uint64()).Bytes(), 32),
 		common.LeftPadBytes(event.BlockHash[:], 32),
 	)
 	seed := new(big.Int).Mod(new(big.Int).SetBytes(raw), commitmentModule.BN128FieldPrime)
@@ -78,7 +78,7 @@ func HandleEvent(
 			pubHexArr[i] = hexutil.EncodeBig(v)
 		}
 		// make a 5 element array that can take in two arrays 3 strings
-		params := []any{proofHexArr, pubHexArr, event.RequestId.String(), payout.Hex()}
+		params := []any{proofHexArr, pubHexArr, event.RequestId, payout}
 
 		go func(reqID string, args []any) {
 			ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)

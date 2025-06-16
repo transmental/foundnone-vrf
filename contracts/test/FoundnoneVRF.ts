@@ -38,33 +38,6 @@ describe("FoundnoneVRF full ZK flow", function () {
     poseidon = await buildPoseidon();
   });
 
-  it("if there is a whitelistedRequester, it should not allow any other address to make a request", async function () {
-    const { entropy, sender, admin, otherAccount } = await loadFixture(
-      deployEntropyFixture
-    );
-
-    // set a whitelisted requester
-    await entropy.write.setWhitelistedRequester([sender.account.address], {
-      account: admin.account,
-    });
-
-    // should allow the whitelisted requester to make a request
-    await expect(
-      entropy.write.requestRng([zeroAddress, 0], {
-        value: parseEther("0.000005"),
-        account: sender.account,
-      })
-    ).to.not.be.rejectedWith();
-
-    // should not allow any other address to make a request
-    await expect(
-      entropy.write.requestRng([zeroAddress, 0], {
-        value: parseEther("0.000005"),
-        account: otherAccount.account,
-      })
-    ).to.be.rejectedWith("RequesterNotWhitelisted()");
-  });
-
   it("does a full ZK prove then submitEntropy and updates commitment, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
     const { fulfiller, sender, entropy, publicClient, admin, otherAccount } =
       await loadFixture(deployEntropyFixture);
@@ -111,7 +84,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -286,7 +259,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -387,7 +360,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -499,7 +472,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -599,7 +572,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -703,7 +676,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -806,7 +779,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
       [{ type: "uint256" }, { type: "uint256" }, { type: "bytes32" }],
-      [requestId, reqReceipt.blockNumber, reqReceipt.blockHash]
+      [requestId, reqReceipt.blockNumber - 1n, reqReceipt.blockHash]
     );
     const seedHash = keccak256(packed);
     const seedBig = BigInt(seedHash) % BN128_PRIME;

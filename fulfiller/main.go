@@ -114,6 +114,8 @@ func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.T
 		}
 		return secret, comm, nil
 	default:
+		// log the address of the fulfiller eoa
+		log.Printf("🔄 submitting commitment transaction directly from fulfiller EOA: %s", auth.From.Hex())
 		log.Println("🔄 submitting commitment transaction directly")
 		_, err = tx.SendWithRetry(ctx, httpc, auth,
 			func(a *bind.TransactOpts) (*types.Transaction, error) {

@@ -2,6 +2,7 @@ package tx
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
@@ -77,28 +78,49 @@ func SendWithRetry(
 	bumpFactor float64,
 	waitTimeout time.Duration,
 ) (*types.Receipt, error) {
-	SuggestFeesAndGetNonce(ctx, client, auth)
+	err := SuggestFeesAndGetNonce(ctx, client, auth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to suggest fees: %w", err)
+	}
+
 	var lastErr error
-	for attempt := range maxRetries {
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
 		fmt.Printf("GasFeeCap: %s, GasTipCap: %s\n", auth.GasFeeCap.String(), auth.GasTipCap.String())
-		rec, err := waitMinedWithTimeout(ctx, client, auth, txFunc, waitTimeout)
-		if err == nil {
+
+		rec, tx, err := waitMinedWithTimeout(ctx, client, auth, txFunc, waitTimeout)
+		if err == nil && rec.Status == types.ReceiptStatusSuccessful {
 			return rec, nil
 		}
-		lastErr = err
 
-		fmt.Printf("Transaction failed: %s\n", err.Error())
+		if rec != nil && rec.Status == types.ReceiptStatusFailed {
+			// Try to decode revert reason:
+			reason, derr := getRevertReason(ctx, client, tx, auth.From)
+			if derr != nil {
+				lastErr = fmt.Errorf("tx reverted, reason decode failed: %w", derr)
+			} else {
+				lastErr = fmt.Errorf("tx reverted: %s", reason)
+			}
+			break
+		}
 
-		if attempt < maxRetries && strings.Contains(err.Error(), "timeout") {
+		if err != nil {
+			lastErr = err
+		}
+
+		fmt.Printf("Transaction failed: %s\n", lastErr.Error())
+
+		if attempt < maxRetries && strings.Contains(lastErr.Error(), "timeout") {
 			BumpFee(auth, bumpFactor, client, ctx)
 			continue
 		}
-		if attempt < maxRetries && strings.Contains(err.Error(), "underpriced") {
+		if attempt < maxRetries && strings.Contains(lastErr.Error(), "underpriced") {
 			BumpFee(auth, bumpFactor, client, ctx)
 			continue
 		}
 		break
 	}
+
 	return nil, fmt.Errorf("tx failed after %d attempts: %w", maxRetries+1, lastErr)
 }
 
@@ -108,25 +130,51 @@ func waitMinedWithTimeout(
 	auth *bind.TransactOpts,
 	txFunc func(*bind.TransactOpts) (*types.Transaction, error),
 	timeout time.Duration,
-) (*types.Receipt, error) {
+) (*types.Receipt, *types.Transaction, error) {
 	tx, err := txFunc(auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
 	tmr := time.After(timeout)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-tmr:
-			return nil, fmt.Errorf("timeout waiting for tx %s", tx.Hash().Hex())
+			return nil, tx, fmt.Errorf("timeout waiting for tx %s", tx.Hash().Hex())
 		case <-ticker.C:
-			if rec, err := client.TransactionReceipt(ctx, tx.Hash()); err == nil && rec != nil {
-				if rec.Status == types.ReceiptStatusSuccessful {
-					return rec, nil
-				}
-				return rec, fmt.Errorf("reverted (status %d)", rec.Status)
+			rec, err := client.TransactionReceipt(ctx, tx.Hash())
+			if err == nil && rec != nil {
+				return rec, tx, nil
 			}
 		}
 	}
+}
+
+// getRevertReason simulates the failed tx to extract the revert reason.
+func getRevertReason(ctx context.Context, client *ethclient.Client, tx *types.Transaction, from common.Address) (string, error) {
+	msg := ethereum.CallMsg{
+		From:     from,
+		To:       tx.To(),
+		Gas:      tx.Gas(),
+		GasPrice: tx.GasPrice(),
+		Value:    tx.Value(),
+		Data:     tx.Data(),
+	}
+
+	// simulate at latest block
+	data, err := client.CallContract(ctx, msg, nil)
+	if err != nil {
+		return "", fmt.Errorf("CallContract error: %w", err)
+	}
+	if len(data) < 4+32+32 {
+		return "", fmt.Errorf("Revert data too short: %s", hex.EncodeToString(data))
+	}
+
+	// Solidity revert reason is a string: abi.encodeWithSignature("Error(string)")
+	reasonLen := new(big.Int).SetBytes(data[4+32 : 4+32+32]).Int64()
+	reasonBytes := data[4+32+32 : 4+32+32+reasonLen]
+	return string(reasonBytes), nil
 }
