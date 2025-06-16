@@ -1,6 +1,6 @@
 # Foundnone VRF
 
-A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards.
+A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA or an external transaction relayer service enabling concurrency and scalability.
 
 # Deployed Addresses: 
 - Base Sepolia: `0x1ec945E267CF78c53306d48D89f2cdb500026811`
@@ -68,6 +68,8 @@ npm run dev
 - **Commitment Scheme**: Enforces a predetermined Poseidon-based fulfiller commitment to prevent brute forcing desired outcomes.
 - **Separate Reward Receiver**: Fulfillers can allocate rewards to a distinct address.
 - **Trusted Setup**: Reliably generated via a reputable Phase 2 Ptau file.
+- **Concurrent Fulfillment**: Multiple fulfillers can compete to fulfill requests, with the first valid proof winning the reward.
+- **External Transaction Relayer**: Supports running fulfillers as a service, allowing for concurrent processing of multiple requests.
 
 ## Trusted Setup
 

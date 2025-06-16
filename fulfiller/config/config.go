@@ -9,14 +9,15 @@ import (
 )
 
 type Config struct {
-	WSRPCURL          string
-	HTTPRPCURL        string
-	ContractAddress   string
-	FulfillerPK       string
-	PayoutAddress     string
-	ChainID           int64
-	ConnectionRetries int
-	RelayerURL        string
+	WSRPCURL              string
+	HTTPRPCURL            string
+	ContractAddress       string
+	FulfillerPK           string
+	PayoutAddress         string
+	ChainID               int64
+	ConnectionRetries     int
+	RelayerURL            string
+	RelayerConcurrencyLimit int
 }
 
 func LoadConfig() (Config, error) {
@@ -31,15 +32,22 @@ func LoadConfig() (Config, error) {
 			retries = r
 		}
 	}
+	relayerConcurrencyLimit := 10
+	if v := os.Getenv("RELAY_CONCURRENCY_LIMIT"); v != "" {
+		if r, err := strconv.Atoi(v); err == nil {
+			relayerConcurrencyLimit = r
+		}
+	}
 	cfg := Config{
-		WSRPCURL:          os.Getenv("WS_RPC_URL"),
-		HTTPRPCURL:        os.Getenv("HTTP_RPC_URL"),
-		ContractAddress:   os.Getenv("CONTRACT_ADDRESS"),
-		FulfillerPK:       os.Getenv("FULFILLER_PK"),
-		PayoutAddress:     os.Getenv("PAYOUT_ADDRESS"),
-		ChainID:           chainID,
-		ConnectionRetries: retries,
-		RelayerURL:        os.Getenv("RELAYER_URL"),
+		WSRPCURL:              os.Getenv("WS_RPC_URL"),
+		HTTPRPCURL:            os.Getenv("HTTP_RPC_URL"),
+		ContractAddress:       os.Getenv("CONTRACT_ADDRESS"),
+		FulfillerPK:           os.Getenv("FULFILLER_PK"),
+		PayoutAddress:         os.Getenv("PAYOUT_ADDRESS"),
+		ChainID:               chainID,
+		ConnectionRetries:     retries,
+		RelayerURL:            os.Getenv("RELAYER_URL"),
+		RelayerConcurrencyLimit: relayerConcurrencyLimit,
 	}
 	if cfg.WSRPCURL == "" || cfg.HTTPRPCURL == "" || cfg.ContractAddress == "" ||
 		cfg.FulfillerPK == "" || cfg.PayoutAddress == "" {

@@ -32,6 +32,7 @@ func HandleEvent(
 	payout common.Address,
 	contractAddress common.Address,
 	relayerUrl string,
+	relayLimiter chan struct{},
 ) error {
 	opts := &bind.CallOpts{
 		Pending: true,
@@ -69,6 +70,9 @@ func HandleEvent(
 
 	switch {
 	case relayerUrl != "":
+		relayLimiter <- struct{}{}
+		defer func() { <-relayLimiter }()
+
 		proofHexArr := make([]string, len(proofArr))
 		for i, v := range proofArr {
 			proofHexArr[i] = hexutil.EncodeBig(v)

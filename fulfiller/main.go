@@ -51,7 +51,7 @@ func run(ctx context.Context) error {
 	}
 
 	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
-	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerURL)
+	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerConcurrencyLimit, cfg.RelayerURL)
 }
 
 func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error) {
@@ -85,12 +85,8 @@ func prepareAuthAndContract(cfg config.Config, httpc *ethclient.Client) (*bind.T
 }
 
 func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.TransactOpts, contract *abi.Abi, cfg config.Config) (*big.Int, *big.Int, error) {
-	secret, comm, err := commitment.Load("zk/commitment.json")
-	if err == nil {
-		return secret, comm, nil
-	}
 
-	secret, comm, err = commitment.Generate()
+	secret, comm, err := commitment.Generate()
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate commitment: %w", err)
 	}
@@ -143,6 +139,7 @@ func subscribeLoop(
 	secret, comm *big.Int,
 	contractAddr, payoutAddr common.Address,
 	retries int,
+	relayerConcurrencyLimit int,
 	relayerUrl string,
 ) error {
 	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
@@ -153,6 +150,8 @@ func subscribeLoop(
 	}
 
 	fmt.Printf("🔄 subscribing to events on %s\n", contractAddr.Hex())
+
+	relayLimiter := make(chan struct{}, relayerConcurrencyLimit) // limit concurrent relays to 5
 
 	for {
 		select {
@@ -182,7 +181,7 @@ func subscribeLoop(
 			if err != nil {
 				continue
 			}
-			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl); err != nil {
+			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl, relayLimiter); err != nil {
 				log.Printf("HandleEvent error: %v", err)
 			}
 		}
