@@ -23,12 +23,17 @@ describe("FoundnoneVRF full ZK flow", function () {
     const entropy = await hre.viem.deployContract("FoundnoneVRF", [
       admin.account.address,
     ]);
+    const mockCallBackReceiver = await hre.viem.deployContract(
+      "MockEntropyReceiver",
+      [entropy.address]
+    );
     const publicClient = await hre.viem.getPublicClient();
     return {
       admin,
       fulfiller,
       sender,
       entropy,
+      mockCallBackReceiver,
       publicClient,
       otherAccount,
     };
@@ -38,9 +43,16 @@ describe("FoundnoneVRF full ZK flow", function () {
     poseidon = await buildPoseidon();
   });
 
-  it("does a full ZK prove then submitEntropy and updates commitment, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
-    const { fulfiller, sender, entropy, publicClient, admin, otherAccount } =
-      await loadFixture(deployEntropyFixture);
+  it("does a full ZK prove then submitEntropy and updates commitment, fulfill callback, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
+    const {
+      fulfiller,
+      sender,
+      entropy,
+      publicClient,
+      admin,
+      otherAccount,
+      mockCallBackReceiver,
+    } = await loadFixture(deployEntropyFixture);
 
     // 1) pick a private secret, build initial commitment = Poseidon(secret, 0)
     const secret = BigInt(123456);
@@ -63,10 +75,13 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
-      value: parseEther("0.000005"),
-      account: otherAccount.account,
-    });
+    const reqTx = await entropy.write.requestRng(
+      [mockCallBackReceiver.address, 350_000],
+      {
+        value: parseEther("0.000005"),
+        account: otherAccount.account,
+      }
+    );
     const reqTx2 = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: otherAccount.account,
@@ -152,6 +167,13 @@ describe("FoundnoneVRF full ZK flow", function () {
       hash: tx,
     });
     expect(receipt.status).to.equal("success");
+
+    await mine(10);
+    const callbackEntropy = await mockCallBackReceiver.read.latestEntropy();
+    expect(callbackEntropy).to.equal(entropySignal);
+
+    console.log("callback entropy:", callbackEntropy);
+    console.log("entropy sig:", entropySignal)
 
     const fulfillerContractBalance =
       await entropy.read.getRewardReceiverBalance([fulfiller.account.address]);

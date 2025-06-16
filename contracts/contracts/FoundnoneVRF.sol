@@ -225,7 +225,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         bytes memory resp = abi.encodeWithSelector(
             IFoundnoneVRF.fulfillEntropyCallback.selector,
             _requestId,
-            _publicInputs
+            _publicInputs[1]
         );
 
         bool _success = false;
