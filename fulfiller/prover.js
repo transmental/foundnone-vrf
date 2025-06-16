@@ -45,4 +45,4 @@ app.post("/prove", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Snarkjs prover listening on port 3000"));
+app.listen(3001, () => console.log("Snarkjs prover listening on port 3001"));

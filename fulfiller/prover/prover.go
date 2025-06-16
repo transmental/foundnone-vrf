@@ -26,7 +26,7 @@ func Run(input CircuitInput) ([24]*big.Int, [3]*big.Int, error) {
 	}
 
 	// 2) call prover server
-	resp, err := http.Post("http://localhost:3000/prove", "application/json", bytes.NewBuffer(payload))
+	resp, err := http.Post("http://localhost:3001/prove", "application/json", bytes.NewBuffer(payload))
 	if err != nil {
 		return zeroProof, zeroPub, fmt.Errorf("POST to prover: %w", err)
 	}

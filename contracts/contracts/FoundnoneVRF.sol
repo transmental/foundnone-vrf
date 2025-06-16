@@ -96,6 +96,11 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     uint256 public contractFeeBalance;
 
     /**
+     * @notice Optionally set an address that is whitelisted to make requests
+     */
+    address public whitelistedRequester;
+
+    /**
      * @notice reentrancy lock active if true
      */
     bool reentrancyLock;
@@ -109,6 +114,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      */
     event RequestFulfilled(
         uint256 indexed requestId,
+        bool callbackSuccess,
         address rewardReceiver,
         uint256[24] proof,
         uint256[3] publicInputs
@@ -182,6 +188,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     error InvalidRequester();
     error CommitmentInUse();
     error Reentrant();
+    error RequesterNotWhitelisted();
 
     /**
      * @notice The constructor for the contract
@@ -206,8 +213,6 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         uint256 _requestId,
         address _rewardReceiver
     ) external nonReentrant {
-        uint256 startGas = gasleft();
-
         // verify the proof
         _verifyProof(_proof, _publicInputs, _requestId);
 
@@ -227,17 +232,25 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             _publicInputs
         );
 
-        reentrancyLock = true;
-        bool success = _callWithExactGas(
-            request[_requestId].callbackGasLimit,
-            request[_requestId].callbackAddress,
-            resp
-        );
-        reentrancyLock = false;
+        bool _success = false;
+
+        if (
+            request[_requestId].callbackAddress != address(0) ||
+            request[_requestId].callbackGasLimit != 0
+        ) {
+            reentrancyLock = true;
+            _success = _callWithExactGas(
+                request[_requestId].callbackGasLimit,
+                request[_requestId].callbackAddress,
+                resp
+            );
+            reentrancyLock = false;
+        }
 
         // emit the event
         emit RequestFulfilled(
             _requestId,
+            _success,
             _rewardReceiver,
             _proof,
             _publicInputs
@@ -352,7 +365,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         }
         // unset the previous commitment
         if (commitments[msg.sender] != 0) {
-            commitmentInUse[commitments[msg.sender]] = false;
+            delete commitmentInUse[commitments[msg.sender]];
         }
         commitments[msg.sender] = _commitment;
         commitmentBlockSet[msg.sender] = block.number;
@@ -394,8 +407,12 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         address callbackAddress,
         uint32 callbackGasLimit
     ) external payable returns (uint256) {
-        nextRequestId += 1;
-
+        if (
+            whitelistedRequester != address(0) &&
+            msg.sender != whitelistedRequester
+        ) {
+            revert RequesterNotWhitelisted();
+        }
         if (msg.value < requestFee) {
             revert InsufficientFee();
         }
@@ -408,8 +425,10 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
             requester: msg.sender
         });
 
+        nextRequestId += 1;
+
         emit RngRequested(
-            nextRequestId,
+            nextRequestId - 1,
             blockhash(block.number - 1),
             msg.sender,
             msg.value
@@ -427,26 +446,23 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @dev The request fee is refunded to the requester (including the contract fee because it is not taken until fulfillment)
      */
     function refundUnfulfilledRequest(uint256 _requestId) external {
+        Request storage _request = request[_requestId];
+        if (_request.requester != msg.sender) {
+            revert InvalidRequester();
+        }
         if (entropies[_requestId] != 0) {
             revert RequestAlreadyFulfilled();
         }
-        if (requestBlockSet[_requestId] == 0) {
+        if (_request.requestBlockSet == 0) {
             revert InvalidRequestId();
         }
-        if (blockhash(requestBlockSet[_requestId]) != 0) {
+        if (blockhash(_request.requestBlockSet) != 0) {
             revert RequestStillValid();
         }
-        if (requesters[_requestId] != msg.sender) {
-            revert InvalidRequester();
-        }
-        payable(msg.sender).transfer(requestFeePaid[_requestId]);
+        payable(msg.sender).transfer(_request.requestFeePaid);
         delete request[_requestId];
 
-        emit RequestRefunded(
-            _requestId,
-            msg.sender,
-            requestFeePaid[_requestId]
-        );
+        emit RequestRefunded(_requestId, msg.sender, _request.requestFeePaid);
     }
 
     /**
@@ -494,6 +510,16 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         }
         contractFeePercentage = _newPercentage;
         emit ContractFeePercentageUpdated(_newPercentage);
+    }
+
+    /**
+     * @param _whitelistedRequester The address to be whitelisted for making requests
+     * @dev This function can only be called by the admin role
+     */
+    function setWhitelistedRequester(
+        address _whitelistedRequester
+    ) external onlyRole(ADMIN_ROLE) {
+        whitelistedRequester = _whitelistedRequester;
     }
 
     modifier nonReentrant() {

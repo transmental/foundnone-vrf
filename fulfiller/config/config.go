@@ -16,6 +16,7 @@ type Config struct {
 	PayoutAddress     string
 	ChainID           int64
 	ConnectionRetries int
+	RelayerURL        string
 }
 
 func LoadConfig() (Config, error) {
@@ -38,6 +39,7 @@ func LoadConfig() (Config, error) {
 		PayoutAddress:     os.Getenv("PAYOUT_ADDRESS"),
 		ChainID:           chainID,
 		ConnectionRetries: retries,
+		RelayerURL:        os.Getenv("RELAYER_URL"),
 	}
 	if cfg.WSRPCURL == "" || cfg.HTTPRPCURL == "" || cfg.ContractAddress == "" ||
 		cfg.FulfillerPK == "" || cfg.PayoutAddress == "" {

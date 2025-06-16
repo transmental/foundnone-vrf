@@ -19,6 +19,7 @@ import (
 	"foundnone-vrf/commitment"
 	"foundnone-vrf/config"
 	"foundnone-vrf/handler"
+	"foundnone-vrf/relayer"
 	"foundnone-vrf/tx"
 )
 
@@ -44,13 +45,13 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	secret, comm, err := ensureCommitment(ctx, httpc, auth, contract)
+	secret, comm, err := ensureCommitment(ctx, httpc, auth, contract, cfg)
 	if err != nil {
 		return err
 	}
 
 	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
-	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries)
+	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerURL)
 }
 
 func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error) {
@@ -65,7 +66,7 @@ func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error
 	return ws, httpc, nil
 }
 
-func prepareAuthAndContract(cfg config.Config, httpc *ethclient.Client) (*bind.TransactOpts, *abi.FoundnoneVRF, common.Address, error) {
+func prepareAuthAndContract(cfg config.Config, httpc *ethclient.Client) (*bind.TransactOpts, *abi.Abi, common.Address, error) {
 	key, err := crypto.HexToECDSA(strings.TrimPrefix(cfg.FulfillerPK, "0x"))
 	if err != nil {
 		return nil, nil, common.Address{}, fmt.Errorf("parse private key: %w", err)
@@ -76,14 +77,14 @@ func prepareAuthAndContract(cfg config.Config, httpc *ethclient.Client) (*bind.T
 	}
 
 	contractAddr := common.HexToAddress(cfg.ContractAddress)
-	contract, err := abi.NewFoundnoneVRF(contractAddr, httpc)
+	contract, err := abi.NewAbi(contractAddr, httpc)
 	if err != nil {
 		return nil, nil, contractAddr, fmt.Errorf("contract binding: %w", err)
 	}
 	return auth, contract, contractAddr, nil
 }
 
-func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.TransactOpts, contract *abi.FoundnoneVRF) (*big.Int, *big.Int, error) {
+func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.TransactOpts, contract *abi.Abi, cfg config.Config) (*big.Int, *big.Int, error) {
 	secret, comm, err := commitment.Load("zk/commitment.json")
 	if err == nil {
 		return secret, comm, nil
@@ -93,18 +94,42 @@ func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.T
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate commitment: %w", err)
 	}
+	switch {
+	case cfg.RelayerURL != "":
+		log.Println("🔄 relaying commitment to contract via relayer")
+		relayerRes, err := relayer.Relay(
+			ctx,
+			cfg.RelayerURL,
+			cfg.ContractAddress,
+			[]any{comm.String()},
+			"setCommitment",
+			"0",
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("relay commitment: %w", err)
+		}
+		log.Printf("🔄 relayed commitment transaction: %s", relayerRes.TxHash)
+		if err := commitment.Save("zk/commitment.json", secret, comm); err != nil {
+			return nil, nil, fmt.Errorf("save commitment: %w", err)
+		}
+		return secret, comm, nil
+	default:
+		log.Println("🔄 submitting commitment transaction directly")
+		_, err = tx.SendWithRetry(ctx, httpc, auth,
+			func(a *bind.TransactOpts) (*types.Transaction, error) {
+				return contract.SetCommitment(a, comm)
+			},
+			5, 0.12, 30*time.Second)
 
-	_, err = tx.SendWithRetry(ctx, httpc, auth, func(a *bind.TransactOpts) (*types.Transaction, error) {
-		return contract.SetCommitment(a, comm)
-	}, 5, 0.12, 30*time.Second)
-	if err != nil {
-		return nil, nil, fmt.Errorf("submit commitment transaction: %w", err)
-	}
+		if err != nil {
+			return nil, nil, fmt.Errorf("submit commitment transaction: %w", err)
+		}
 
-	if err := commitment.Save("zk/commitment.json", secret, comm); err != nil {
-		return nil, nil, fmt.Errorf("save commitment: %w", err)
+		if err := commitment.Save("zk/commitment.json", secret, comm); err != nil {
+			return nil, nil, fmt.Errorf("save commitment: %w", err)
+		}
+		return secret, comm, nil
 	}
-	return secret, comm, nil
 }
 
 func subscribeLoop(
@@ -112,10 +137,11 @@ func subscribeLoop(
 	ws *ethclient.Client,
 	httpc *ethclient.Client,
 	auth *bind.TransactOpts,
-	contract *abi.FoundnoneVRF,
+	contract *abi.Abi,
 	secret, comm *big.Int,
 	contractAddr, payoutAddr common.Address,
 	retries int,
+	relayerUrl string,
 ) error {
 	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
 	logs := make(chan types.Log)
@@ -154,7 +180,7 @@ func subscribeLoop(
 			if err != nil {
 				continue
 			}
-			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr); err != nil {
+			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl); err != nil {
 				log.Printf("HandleEvent error: %v", err)
 			}
 		}

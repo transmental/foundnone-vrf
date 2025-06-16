@@ -9,11 +9,21 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   networks: {
-    // baseSepolia: {
-    //   url: "https://sepolia.base.org",
-    //   accounts: [process.env.PRIVATE_KEY!],
-    //   chainId: 84532,
-    // },
+    baseSepolia: {
+      url: "https://sepolia.base.org",
+      accounts: [process.env.PRIVATE_KEY!],
+      chainId: 84532,
+    },
+    curtis: {
+      url: "https://curtis.rpc.caldera.xyz/http",
+      accounts: [process.env.PRIVATE_KEY!],
+      chainId: 33111,
+    },
+    apeChain: {
+      url: "https://apechain.io",
+      accounts: [process.env.PRIVATE_KEY!],
+      chainId: 33139,
+    },
   },
   solidity: {
     version: "0.8.28",
@@ -27,6 +37,8 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       baseSepolia: process.env.BASESCAN_API_KEY!,
+      curtis: process.env.APESCAN_API_KEY!,
+      apeChain: process.env.APESCAN_API_KEY!,
     },
     customChains: [
       {
@@ -35,6 +47,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
           browserURL: "https://sepolia.basescan.org",
+        },
+      },
+      {
+        network: "apeChain",
+        chainId: 33139,
+        urls: {
+          apiURL: "https://api.apescan.io/api",
+          browserURL: "https://apescan.io",
+        },
+      },
+      {
+        network: "curtis",
+        chainId: 33111,
+        urls: {
+          apiURL: "https://api-curtis.apescan.io/api",
+          browserURL: "https://curtis.apescan.io",
         },
       },
     ],
