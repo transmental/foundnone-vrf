@@ -5,6 +5,7 @@ import "dotenv/config";
 import "@nomicfoundation/hardhat-viem";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@tenderly/hardhat-tenderly";
 import "solidity-coverage";
 
 const config: HardhatUserConfig = {
