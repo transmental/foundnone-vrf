@@ -4,7 +4,7 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 
 # Deployed Addresses:
 
-- Base Sepolia: `0x1ec945E267CF78c53306d48D89f2cdb500026811`
+- Base Sepolia: `0xc907a3187c3900D98F2fB94aED4f3c2E54cf8cD9`
 - Curtis (Apechain Testnet): `0x25f27467377DaC26B79784603A0b2DcDaa3b67cf`
 - Base: `pending further testing...`
 
@@ -22,7 +22,7 @@ WS_RPC_URL=
 # The URL of the HTTP RPC endpoint to connect to.
 HTTP_RPC_URL=
 # The address of the contract to listen to requests on and send fulfillment transactions to.
-CONTRACT_ADDRESS=0x1ec945E267CF78c53306d48D89f2cdb500026811
+CONTRACT_ADDRESS=0xc907a3187c3900D98F2fB94aED4f3c2E54cf8cD9
 # The address of the account that will be credited with the fulfillment rewards.
 PAYOUT_ADDRESS=
 # The chain ID of the network you are connecting to.

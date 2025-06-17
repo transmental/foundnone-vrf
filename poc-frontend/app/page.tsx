@@ -2,13 +2,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { createPublicClient, createWalletClient, custom, fallback, http, parseEventLogs, WalletClient, webSocket } from 'viem'
+import { createPublicClient, createWalletClient, custom, fallback, http, parseEventLogs, WalletClient, webSocket, zeroAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
 
 export default function Home() {
-  const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x1ec945E267CF78c53306d48D89f2cdb500026811'
+  const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0xc907a3187c3900D98F2fB94aED4f3c2E54cf8cD9'
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
   const [rand, setRand] = useState<string | null>(null)
@@ -235,6 +235,7 @@ export default function Home() {
         abi: foundnoneVrfAbi,
         functionName: 'requestRng',
         value: vrfFee as any,
+        args: [zeroAddress, 0]
       })
       const receipt = await publicClient.waitForTransactionReceipt({
         hash,
@@ -317,12 +318,12 @@ export default function Home() {
       }
     } else if (input === 'clear') {
       setTerminalOutput([])
-    // } else if (input === 'logs') {
-    //   if (logsActive) {
-    //     stopLogStream()
-    //   } else {
-    //     handleLogStream()
-    //   }
+      // } else if (input === 'logs') {
+      //   if (logsActive) {
+      //     stopLogStream()
+      //   } else {
+      //     handleLogStream()
+      //   }
     } else {
       appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
     }
