@@ -1,9 +1,11 @@
 # Foundnone VRF
 
-A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards.
+A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA or an external transaction relayer service enabling concurrency and scalability. The requester can provide a callback address to receive the entropy, or it can be retrieved by polling the contract. On the fulfillment side, the fulfiller can opt to whitelist specific callback addresses and/or specify a maximum amount of callback gas to prevent spam.
 
-# Deployed Addresses: 
+# Deployed Addresses:
+
 - Base Sepolia: `0x1ec945E267CF78c53306d48D89f2cdb500026811`
+- Curtis (Apechain Testnet): `0x25f27467377DaC26B79784603A0b2DcDaa3b67cf`
 - Base: `pending further testing...`
 
 # Quick Start
@@ -13,24 +15,35 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 `cp fulfiller/.env.example fulfiller/.env`
 
 ```ini
-# RPC URLs
-WS_RPC_URL=ws://...
-HTTP_RPC_URL=http://...
+# Required
 
-# Deployed FoundnoneVRF contract address on Base Sepolia
+# The URL of the websocket RPC endpoint to connect to.
+WS_RPC_URL=
+# The URL of the HTTP RPC endpoint to connect to.
+HTTP_RPC_URL=
+# The address of the contract to listen to requests on and send fulfillment transactions to.
 CONTRACT_ADDRESS=0x1ec945E267CF78c53306d48D89f2cdb500026811
-
-# Private key of the ENTROPY_ROLE (do not prefix with 0x)
-FULFILLER_PK=...
-
-# Address to receive rewards
-PAYOUT_ADDRESS=0x...
-
-# Chain ID (e.g. 84532)
+# The address of the account that will be credited with the fulfillment rewards.
+PAYOUT_ADDRESS=
+# The chain ID of the network you are connecting to.
 CHAIN_ID=84532
 
-# Optional retry settings for WebSocket re-subscription, defaults to 5
+# Optional
+# The number of retries to make if the websocket connection fails.
 CONNECTION_RETRIES=5
+# The base URL of the relayer to use for sending transactions, this is preferably an internal URL. 
+# When set, the fulfillment is sent optimistically and the relayer service will handle fulfillment. (non blocking)
+RELAYER_URL=
+# Must be set if the RELAYER_URL is not set, if fulfilling is done by this golang service 
+# it is blocking and will wait for each fulfillment transaction to be mined.
+FULFILLER_PK= 
+#Optional, defaults to 10, the number of concurrent fulfillments that can be processed by an external transaction relayer service.
+RELAYER_CONCURRENCY_LIMIT=10
+# Optional, defaults to 100000, the maximum gas limit for each callback transaction.
+MAX_CALLBACK_GAS_LIMIT=100000
+# Optionally set a list of whitelisted callback addresses that can be used to fulfill requests.
+# If set, only events with either the zero address or one of the whitelisted addresses will be processed.
+WHITELISTED_CALLBACK_ADDRESSES=0x1ec945E267CF78c53306d48D89f2cdb500026811,0x...
 ```
 
 ## Build & Run Fulfiller
@@ -68,6 +81,8 @@ npm run dev
 - **Commitment Scheme**: Enforces a predetermined Poseidon-based fulfiller commitment to prevent brute forcing desired outcomes.
 - **Separate Reward Receiver**: Fulfillers can allocate rewards to a distinct address.
 - **Trusted Setup**: Reliably generated via a reputable Phase 2 Ptau file.
+- **Concurrent Fulfillment**: Multiple fulfillers can compete to fulfill requests, with the first valid proof winning the reward.
+- **External Transaction Relayer**: Supports running fulfillers as a service, allowing for concurrent processing of multiple requests.
 
 ## Trusted Setup
 
@@ -111,6 +126,7 @@ This `commitment` is set onchain before processing requests. Every proof must in
 - **Full Transparency and Easy Setup**: Open-source prover pipeline and Dockerized deployment.
 
 ## Contract Testing
+
 - 100% coverage of the smart contract (with full snarkjs prover pipeline) at `contracts/test/FoundnoneVRF.ts`.
 
 ```bash
@@ -151,6 +167,8 @@ MIT © 2025 Zachary Owens
 | **Request ID**                       | A unique identifier for each VRF entropy request.                                                                              |
 | **Blockhash**                        | The hash of a recent block, used as an unpredictable seed in entropy generation.                                               |
 | **Fulfiller**                        | An entity that runs the prover and submits entropy proofs to the Foundnone VRF contract for rewards.                           |
+| **Callback Address**                 | An optional address provided by the requester to receive the entropy directly, or it can be retrieved by polling the contract. |
+| **Callback Gas Limit**               | The maximum amount of gas that can be used for the callback function when sending the entropy to the callback address.         |
 
 # FAQ
 
@@ -234,3 +252,10 @@ If the circuit changes, proofs generated using outdated artifacts will fail veri
 No.  
 The system is open — anyone can run a fulfiller at any time.  
 Rewards are paid out competitively based on proof submissions.
+
+---
+
+## ❓ How does a fulfiller protect against callback spam?
+Fulfillers can:
+- Whitelist specific callback addresses to ensure only trusted recipients receive entropy.
+- Set a maximum gas limit for callbacks to prevent excessive costs from spammy requests.

@@ -7,7 +7,7 @@ import { expect } from "chai";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import { parseEther, encodeAbiParameters, keccak256 } from "viem";
+import { parseEther, encodeAbiParameters, keccak256, zeroAddress } from "viem";
 import { buildPoseidon } from "circomlibjs";
 
 describe("FoundnoneVRF full ZK flow", function () {
@@ -18,17 +18,24 @@ describe("FoundnoneVRF full ZK flow", function () {
   );
 
   async function deployEntropyFixture() {
-    const [admin, fulfiller, sender] = await hre.viem.getWalletClients();
+    const [admin, fulfiller, sender, otherAccount] =
+      await hre.viem.getWalletClients();
     const entropy = await hre.viem.deployContract("FoundnoneVRF", [
       admin.account.address,
     ]);
+    const mockCallBackReceiver = await hre.viem.deployContract(
+      "MockEntropyReceiver",
+      [entropy.address]
+    );
     const publicClient = await hre.viem.getPublicClient();
     return {
       admin,
       fulfiller,
       sender,
       entropy,
+      mockCallBackReceiver,
       publicClient,
+      otherAccount,
     };
   }
 
@@ -36,9 +43,16 @@ describe("FoundnoneVRF full ZK flow", function () {
     poseidon = await buildPoseidon();
   });
 
-  it("does a full ZK prove then submitEntropy and updates commitment, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
-    const { fulfiller, sender, entropy, publicClient, admin } =
-      await loadFixture(deployEntropyFixture);
+  it("does a full ZK prove then submitEntropy and updates commitment, fulfill callback, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
+    const {
+      fulfiller,
+      sender,
+      entropy,
+      publicClient,
+      admin,
+      otherAccount,
+      mockCallBackReceiver,
+    } = await loadFixture(deployEntropyFixture);
 
     // 1) pick a private secret, build initial commitment = Poseidon(secret, 0)
     const secret = BigInt(123456);
@@ -49,16 +63,28 @@ describe("FoundnoneVRF full ZK flow", function () {
       "0x" + initialCommitment.toString(16).padStart(64, "0");
 
     // push that to chain
-    await entropy.write.setCommitment([initialCommHex as any], {
-      account: sender.account,
+    const commitmentTxHash = await entropy.write.setCommitment(
+      [initialCommHex as any],
+      {
+        account: sender.account,
+      }
+    );
+
+    await publicClient.waitForTransactionReceipt({
+      hash: commitmentTxHash,
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng(
+      [mockCallBackReceiver.address, 350_000],
+      {
+        value: parseEther("0.000005"),
+        account: otherAccount.account,
+      }
+    );
+    const reqTx2 = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
-    });
-    const reqTx2 = await entropy.write.requestRng({
-      value: parseEther("0.000005"),
+      account: otherAccount.account,
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
       hash: reqTx,
@@ -73,7 +99,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -142,6 +168,13 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(receipt.status).to.equal("success");
 
+    await mine(10);
+    const callbackEntropy = await mockCallBackReceiver.read.latestEntropy();
+    expect(callbackEntropy).to.equal(entropySignal);
+
+    console.log("callback entropy:", callbackEntropy);
+    console.log("entropy sig:", entropySignal)
+
     const fulfillerContractBalance =
       await entropy.read.getRewardReceiverBalance([fulfiller.account.address]);
 
@@ -184,7 +217,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     // expect the refund of the request to revert
     await expect(
       entropy.write.refundUnfulfilledRequest([requestId], {
-        account: sender.account,
+        account: otherAccount.account,
       })
     ).to.be.rejectedWith("RequestAlreadyFulfilled()");
     // cleanup
@@ -206,7 +239,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     await expect(
-      entropy.write.requestRng({
+      entropy.write.requestRng([zeroAddress, 0], {
         account: sender.account,
         value: parseEther("0.0000001"),
       })
@@ -235,7 +268,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -248,7 +281,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -336,7 +369,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -349,7 +382,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -448,7 +481,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -461,7 +494,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -548,7 +581,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -561,7 +594,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -652,7 +685,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -665,7 +698,7 @@ describe("FoundnoneVRF full ZK flow", function () {
 
     // grab the block number when it was mined
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
@@ -748,7 +781,7 @@ describe("FoundnoneVRF full ZK flow", function () {
       "0x" + initialCommitment.toString(16).padStart(64, "0");
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -768,7 +801,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
       [{ type: "uint256" }, { type: "uint256" }, { type: "bytes32" }],
-      [requestId, reqReceipt.blockNumber, reqReceipt.blockHash]
+      [requestId, reqReceipt.blockNumber - 1n, reqReceipt.blockHash]
     );
     const seedHash = keccak256(packed);
     const seedBig = BigInt(seedHash) % BN128_PRIME;
@@ -888,7 +921,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -904,7 +937,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -920,7 +953,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -930,13 +963,13 @@ describe("FoundnoneVRF full ZK flow", function () {
       entropy.write.refundUnfulfilledRequest([2n], {
         account: sender.account,
       })
-    ).to.be.rejectedWith("InvalidRequestId()");
+    ).to.be.rejectedWith("InvalidRequester()");
   });
   it("should not allow the refund of a request if the block hash is available", async function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
