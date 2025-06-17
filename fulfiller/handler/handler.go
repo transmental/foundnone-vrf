@@ -33,6 +33,7 @@ func HandleEvent(
 	contractAddress common.Address,
 	relayerUrl string,
 	relayLimiter chan struct{},
+	chainId int64,
 ) error {
 	opts := &bind.CallOpts{
 		Pending: true,
@@ -81,13 +82,13 @@ func HandleEvent(
 		for i, v := range pubArr {
 			pubHexArr[i] = hexutil.EncodeBig(v)
 		}
-		// make a 5 element array that can take in two arrays 3 strings
+
 		params := []any{proofHexArr, pubHexArr, event.RequestId, payout}
 
 		go func(reqID string, args []any) {
 			ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			res, err := relayer.Relay(ctx2, relayerUrl, contractAddress.Hex(), args, "submitEntropy", "0")
+			res, err := relayer.Relay(ctx2, relayerUrl, contractAddress.Hex(), args, "submitEntropy", "0", chainId)
 			if err != nil || !res.Success {
 				log.Printf("async relay failed for %s: %v", reqID, err)
 			}

@@ -15,6 +15,14 @@ type RelayerResponse struct {
 	TxHash  string `json:"txHash"`
 }
 
+var NetworkNameByChainId = map[int64]string{
+	1:     "ETHEREUM",
+	33111: "CURTIS",
+	8453:  "BASE",
+	42161: "ARBITRUM",
+	84532: "BASE_SEPOLIA",
+}
+
 type RelayerDto struct {
 	ContractAddress string `json:"contractAddress"`
 	Args            []any  `json:"args"`
@@ -24,13 +32,13 @@ type RelayerDto struct {
 	SkipSimulation  bool   `json:"skipSimulation"`
 }
 
-func Relay(ctx context.Context, relayerUrl string, contractAddress string, args []any, funcName string, value string) (*RelayerResponse, error) {
+func Relay(ctx context.Context, relayerUrl string, contractAddress string, args []any, funcName string, value string, chainId int64) (*RelayerResponse, error) {
 	var body = RelayerDto{
 		ContractAddress: contractAddress,
 		Args:            args,
 		FuncName:        funcName,
 		Value:           value,
-		Network:         "CURTIS",
+		Network:         NetworkNameByChainId[chainId],
 		SkipSimulation:  true,
 	}
 

@@ -51,7 +51,7 @@ func run(ctx context.Context) error {
 	}
 
 	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
-	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerConcurrencyLimit, cfg.RelayerURL, cfg.WhitelistedCallbackAddresses, cfg.MaxCallbackGasLimit)
+	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerConcurrencyLimit, cfg.RelayerURL, cfg.WhitelistedCallbackAddresses, cfg.MaxCallbackGasLimit, cfg.ChainID)
 }
 
 func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error) {
@@ -100,6 +100,7 @@ func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.T
 			[]any{comm.String()},
 			"setCommitment",
 			"0",
+			cfg.ChainID,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("relay commitment: %w", err)
@@ -143,6 +144,7 @@ func subscribeLoop(
 	relayerUrl string,
 	whitelistedCallbackAddresses []string,
 	maxCallbackGasLimit uint32,
+	chainId int64,
 ) error {
 	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
 	logs := make(chan types.Log)
@@ -187,7 +189,7 @@ func subscribeLoop(
 				log.Printf("Callback address %s not whitelisted, skipping event %s", event.CallbackAddress.Hex(), event.RequestId.String())
 				continue
 			}
-			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl, relayLimiter); err != nil {
+			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl, relayLimiter, chainId); err != nil {
 				log.Printf("HandleEvent error: %v", err)
 			}
 		}

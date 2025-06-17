@@ -15,24 +15,35 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 `cp fulfiller/.env.example fulfiller/.env`
 
 ```ini
-# RPC URLs
-WS_RPC_URL=ws://...
-HTTP_RPC_URL=http://...
+# Required
 
-# Deployed FoundnoneVRF contract address on Base Sepolia
+# The URL of the websocket RPC endpoint to connect to.
+WS_RPC_URL=
+# The URL of the HTTP RPC endpoint to connect to.
+HTTP_RPC_URL=
+# The address of the contract to listen to requests on and send fulfillment transactions to.
 CONTRACT_ADDRESS=0x1ec945E267CF78c53306d48D89f2cdb500026811
-
-# Private key of the ENTROPY_ROLE (do not prefix with 0x)
-FULFILLER_PK=...
-
-# Address to receive rewards
-PAYOUT_ADDRESS=0x...
-
-# Chain ID (e.g. 84532)
+# The address of the account that will be credited with the fulfillment rewards.
+PAYOUT_ADDRESS=
+# The chain ID of the network you are connecting to.
 CHAIN_ID=84532
 
-# Optional retry settings for WebSocket re-subscription, defaults to 5
+# Optional
+# The number of retries to make if the websocket connection fails.
 CONNECTION_RETRIES=5
+# The base URL of the relayer to use for sending transactions, this is preferably an internal URL. 
+# When set, the fulfillment is sent optimistically and the relayer service will handle fulfillment. (non blocking)
+RELAYER_URL=
+# Must be set if the RELAYER_URL is not set, if fulfilling is done by this golang service 
+# it is blocking and will wait for each fulfillment transaction to be mined.
+FULFILLER_PK= 
+#Optional, defaults to 10, the number of concurrent fulfillments that can be processed by an external transaction relayer service.
+RELAYER_CONCURRENCY_LIMIT=10
+# Optional, defaults to 100000, the maximum gas limit for each callback transaction.
+MAX_CALLBACK_GAS_LIMIT=100000
+# Optionally set a list of whitelisted callback addresses that can be used to fulfill requests.
+# If set, only events with either the zero address or one of the whitelisted addresses will be processed.
+WHITELISTED_CALLBACK_ADDRESSES=0x1ec945E267CF78c53306d48D89f2cdb500026811,0x...
 ```
 
 ## Build & Run Fulfiller
