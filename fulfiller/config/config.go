@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	WSRPCURL              string
-	HTTPRPCURL            string
-	ContractAddress       string
-	FulfillerPK           string
-	PayoutAddress         string
-	ChainID               int64
-	ConnectionRetries     int
-	RelayerURL            string
-	RelayerConcurrencyLimit int
+	WSRPCURL                     string
+	HTTPRPCURL                   string
+	ContractAddress              string
+	FulfillerPK                  string
+	PayoutAddress                string
+	ChainID                      int64
+	ConnectionRetries            int
+	RelayerURL                   string
+	RelayerConcurrencyLimit      int
+	WhitelistedCallbackAddresses []string
 }
 
 func LoadConfig() (Config, error) {
@@ -38,16 +40,25 @@ func LoadConfig() (Config, error) {
 			relayerConcurrencyLimit = r
 		}
 	}
+
+	whitelistedCallbackAddresses := []string{}
+	if v := os.Getenv("WHITELISTED_CALLBACK_ADDRESSES"); v != "" {
+		// split the addresses by comma and lowercase, there should be no spaces to worry about here. 
+		// If there are spaces between the addresses, fix the env var.
+		addresses := strings.Split(strings.ToLower(v), ",")
+		whitelistedCallbackAddresses = append(whitelistedCallbackAddresses, addresses...)
+	}
 	cfg := Config{
-		WSRPCURL:              os.Getenv("WS_RPC_URL"),
-		HTTPRPCURL:            os.Getenv("HTTP_RPC_URL"),
-		ContractAddress:       os.Getenv("CONTRACT_ADDRESS"),
-		FulfillerPK:           os.Getenv("FULFILLER_PK"),
-		PayoutAddress:         os.Getenv("PAYOUT_ADDRESS"),
-		ChainID:               chainID,
-		ConnectionRetries:     retries,
-		RelayerURL:            os.Getenv("RELAYER_URL"),
-		RelayerConcurrencyLimit: relayerConcurrencyLimit,
+		WSRPCURL:                     os.Getenv("WS_RPC_URL"),
+		HTTPRPCURL:                   os.Getenv("HTTP_RPC_URL"),
+		ContractAddress:              os.Getenv("CONTRACT_ADDRESS"),
+		FulfillerPK:                  os.Getenv("FULFILLER_PK"),
+		PayoutAddress:                os.Getenv("PAYOUT_ADDRESS"),
+		ChainID:                      chainID,
+		ConnectionRetries:            retries,
+		RelayerURL:                   os.Getenv("RELAYER_URL"),
+		RelayerConcurrencyLimit:      relayerConcurrencyLimit,
+		WhitelistedCallbackAddresses: whitelistedCallbackAddresses,
 	}
 	if cfg.WSRPCURL == "" || cfg.HTTPRPCURL == "" || cfg.ContractAddress == "" ||
 		cfg.FulfillerPK == "" || cfg.PayoutAddress == "" {

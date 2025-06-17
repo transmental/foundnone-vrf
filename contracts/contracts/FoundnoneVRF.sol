@@ -122,6 +122,8 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param feePaid The fee paid for the request
      */
     event RngRequested(
+        address callbackAddress,
+        uint32 callbackGasLimit,
         uint256 requestId,
         bytes32 blockHash,
         uint256 requestBlockSet,
@@ -418,6 +420,8 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         });
 
         emit RngRequested(
+            callbackAddress,
+            callbackGasLimit,
             nextRequestId,
             blockhash(block.number - 1),
             block.number - 1,

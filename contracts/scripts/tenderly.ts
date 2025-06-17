@@ -5,7 +5,7 @@ async function main() {
 
   await tenderly.verify({
     name: "FoundnoneVRF",
-    address: "0x857655697c706a774c47a72Ca93018Fb139C9e4a",
+    address: "0x25f27467377DaC26B79784603A0b2DcDaa3b67cf",
   });
 }
 
