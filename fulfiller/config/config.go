@@ -20,6 +20,7 @@ type Config struct {
 	RelayerURL                   string
 	RelayerConcurrencyLimit      int
 	WhitelistedCallbackAddresses []string
+	MaxCallbackGasLimit          uint32
 }
 
 func LoadConfig() (Config, error) {
@@ -43,11 +44,21 @@ func LoadConfig() (Config, error) {
 
 	whitelistedCallbackAddresses := []string{}
 	if v := os.Getenv("WHITELISTED_CALLBACK_ADDRESSES"); v != "" {
-		// split the addresses by comma and lowercase, there should be no spaces to worry about here. 
+		// split the addresses by comma and lowercase, there should be no spaces to worry about here.
 		// If there are spaces between the addresses, fix the env var.
 		addresses := strings.Split(strings.ToLower(v), ",")
 		whitelistedCallbackAddresses = append(whitelistedCallbackAddresses, addresses...)
 	}
+
+	maxCallbackGasLimit := uint32(100000)
+	if v := os.Getenv("MAX_CALLBACK_GAS_LIMIT"); v != "" {
+		if g, err := strconv.ParseUint(v, 10, 32); err == nil {
+			maxCallbackGasLimit = uint32(g)
+		} else {
+			return Config{}, fmt.Errorf("invalid MAX_CALLBACK_GAS_LIMIT: %w", err)
+		}
+	}
+
 	cfg := Config{
 		WSRPCURL:                     os.Getenv("WS_RPC_URL"),
 		HTTPRPCURL:                   os.Getenv("HTTP_RPC_URL"),
@@ -59,6 +70,7 @@ func LoadConfig() (Config, error) {
 		RelayerURL:                   os.Getenv("RELAYER_URL"),
 		RelayerConcurrencyLimit:      relayerConcurrencyLimit,
 		WhitelistedCallbackAddresses: whitelistedCallbackAddresses,
+		MaxCallbackGasLimit:          maxCallbackGasLimit,
 	}
 	if cfg.WSRPCURL == "" || cfg.HTTPRPCURL == "" || cfg.ContractAddress == "" ||
 		cfg.FulfillerPK == "" || cfg.PayoutAddress == "" {

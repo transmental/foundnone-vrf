@@ -51,7 +51,7 @@ func run(ctx context.Context) error {
 	}
 
 	payoutAddr := common.HexToAddress(cfg.PayoutAddress)
-	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerConcurrencyLimit, cfg.RelayerURL, cfg.WhitelistedCallbackAddresses)
+	return subscribeLoop(ctx, ws, httpc, auth, contract, secret, comm, contractAddr, payoutAddr, cfg.ConnectionRetries, cfg.RelayerConcurrencyLimit, cfg.RelayerURL, cfg.WhitelistedCallbackAddresses, cfg.MaxCallbackGasLimit)
 }
 
 func dialClients(cfg config.Config) (*ethclient.Client, *ethclient.Client, error) {
@@ -142,6 +142,7 @@ func subscribeLoop(
 	relayerConcurrencyLimit int,
 	relayerUrl string,
 	whitelistedCallbackAddresses []string,
+	maxCallbackGasLimit uint32,
 ) error {
 	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}}
 	logs := make(chan types.Log)
@@ -182,7 +183,7 @@ func subscribeLoop(
 			if err != nil {
 				continue
 			}
-			if !checkCallbackAddress(event.CallbackAddress, whitelistedCallbackAddresses) {
+			if !checkCallbackAddressAndGasLimit(event.CallbackAddress, event.CallbackGasLimit, whitelistedCallbackAddresses, maxCallbackGasLimit) {
 				log.Printf("Callback address %s not whitelisted, skipping event %s", event.CallbackAddress.Hex(), event.RequestId.String())
 				continue
 			}
@@ -193,17 +194,31 @@ func subscribeLoop(
 	}
 }
 
-func checkCallbackAddress(
-	address common.Address,
+func checkCallbackAddressAndGasLimit(
+	callbackAddress common.Address,
+	gasRequired uint32,
 	whitelistedAddresses []string,
+	maxGas uint32,
 ) bool {
+	if callbackAddress == (common.Address{}) {
+		return true
+	}
+
+	if gasRequired > maxGas {
+		return false
+	}
+
 	if len(whitelistedAddresses) == 0 {
 		return true
 	}
+
+	cb := callbackAddress.Hex()
+
 	for _, addr := range whitelistedAddresses {
-		if addr == address.Hex() || strings.EqualFold(addr, address.Hex()) {
+		if strings.EqualFold(addr, cb) {
 			return true
 		}
 	}
+
 	return false
 }

@@ -1,9 +1,11 @@
 # Foundnone VRF
 
-A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA or an external transaction relayer service enabling concurrency and scalability.
+A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA or an external transaction relayer service enabling concurrency and scalability. The requester can provide a callback address to receive the entropy, or it can be retrieved by polling the contract. On the fulfillment side, the fulfiller can opt to whitelist specific callback addresses and/or specify a maximum amount of callback gas to prevent spam.
 
-# Deployed Addresses: 
+# Deployed Addresses:
+
 - Base Sepolia: `0x1ec945E267CF78c53306d48D89f2cdb500026811`
+- Curtis (Apechain Testnet): `0x25f27467377DaC26B79784603A0b2DcDaa3b67cf`
 - Base: `pending further testing...`
 
 # Quick Start
@@ -113,6 +115,7 @@ This `commitment` is set onchain before processing requests. Every proof must in
 - **Full Transparency and Easy Setup**: Open-source prover pipeline and Dockerized deployment.
 
 ## Contract Testing
+
 - 100% coverage of the smart contract (with full snarkjs prover pipeline) at `contracts/test/FoundnoneVRF.ts`.
 
 ```bash
@@ -153,6 +156,8 @@ MIT © 2025 Zachary Owens
 | **Request ID**                       | A unique identifier for each VRF entropy request.                                                                              |
 | **Blockhash**                        | The hash of a recent block, used as an unpredictable seed in entropy generation.                                               |
 | **Fulfiller**                        | An entity that runs the prover and submits entropy proofs to the Foundnone VRF contract for rewards.                           |
+| **Callback Address**                 | An optional address provided by the requester to receive the entropy directly, or it can be retrieved by polling the contract. |
+| **Callback Gas Limit**               | The maximum amount of gas that can be used for the callback function when sending the entropy to the callback address.         |
 
 # FAQ
 
@@ -236,3 +241,10 @@ If the circuit changes, proofs generated using outdated artifacts will fail veri
 No.  
 The system is open — anyone can run a fulfiller at any time.  
 Rewards are paid out competitively based on proof submissions.
+
+---
+
+## ❓ How does a fulfiller protect against callback spam?
+Fulfillers can:
+- Whitelist specific callback addresses to ensure only trusted recipients receive entropy.
+- Set a maximum gas limit for callbacks to prevent excessive costs from spammy requests.
