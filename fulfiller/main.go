@@ -206,7 +206,8 @@ func checkCallbackAddressAndGasLimit(
 		return true
 	}
 
-	if gasRequired > maxGas {
+	if gasRequired >= maxGas {
+		log.Printf("Callback gas limit %d exceeds maximum allowed %d for address %s", gasRequired, maxGas, callbackAddress.Hex())
 		return false
 	}
 
@@ -222,5 +223,6 @@ func checkCallbackAddressAndGasLimit(
 		}
 	}
 
+	log.Printf("Callback address %s is not whitelisted", cb)
 	return false
 }
