@@ -8,7 +8,7 @@ import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
 
 export default function Home() {
-  const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0xc907a3187c3900D98F2fB94aED4f3c2E54cf8cD9'
+  const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x6011C31271b321FcE089FB898ecd487BA96CC73f'
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
   const [rand, setRand] = useState<string | null>(null)

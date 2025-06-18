@@ -4,7 +4,7 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 
 # Deployed Addresses:
 
-- Base Sepolia: `0xc907a3187c3900D98F2fB94aED4f3c2E54cf8cD9`
+- Base Sepolia: `0x6011C31271b321FcE089FB898ecd487BA96CC73f`
 - Curtis (Apechain Testnet): `0x25f27467377DaC26B79784603A0b2DcDaa3b67cf`
 - Base: `pending further testing...`
 
