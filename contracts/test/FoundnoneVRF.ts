@@ -178,10 +178,10 @@ describe("FoundnoneVRF full ZK flow", function () {
     const fulfillerContractBalance =
       await entropy.read.getRewardReceiverBalance([fulfiller.account.address]);
 
-    const contractFeePercentage = await entropy.read.contractFeePercentage();
+    const contractFeePercentage = await entropy.read.contractFeeBasisPoints();
 
     const requestFee = await entropy.read.requestFee();
-    const fee = (requestFee * contractFeePercentage) / 100n;
+    const fee = (requestFee * contractFeePercentage) / 10_000n;
 
     const expectedFulfillerBalance = requestFee - fee;
 
@@ -872,18 +872,18 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { admin, entropy, sender } = await loadFixture(deployEntropyFixture);
 
     const newFee = parseEther("0.00001");
-    const newFeePercentage = 10n;
+    const newFeePercentage = 1000n;
 
     await entropy.write.setRequestFee([newFee], {
       account: admin.account,
     });
 
-    await entropy.write.setContractFeePercentage([newFeePercentage], {
+    await entropy.write.setContractFeeBasisPoints([newFeePercentage], {
       account: admin.account,
     });
 
     const fee = await entropy.read.requestFee();
-    const feePercentage = await entropy.read.contractFeePercentage();
+    const feePercentage = await entropy.read.contractFeeBasisPoints();
 
     expect(fee).to.equal(newFee);
     expect(feePercentage).to.equal(newFeePercentage);
@@ -896,7 +896,7 @@ describe("FoundnoneVRF full ZK flow", function () {
       })
     ).to.be.rejectedWith("AccessControlUnauthorizedAccount");
     await expect(
-      entropy.write.setContractFeePercentage([newFeePercentage2], {
+      entropy.write.setContractFeeBasisPoints([newFeePercentage2], {
         account: sender.account,
       })
     ).to.be.rejectedWith("AccessControlUnauthorizedAccount");
@@ -984,13 +984,13 @@ describe("FoundnoneVRF full ZK flow", function () {
   it("should not allow the admin to set the fee to 20% or more", async function () {
     const { admin, entropy } = await loadFixture(deployEntropyFixture);
 
-    const newFeePercentage = 21n;
+    const newFeePercentage = 2100n;
 
     await expect(
-      entropy.write.setContractFeePercentage([newFeePercentage], {
+      entropy.write.setContractFeeBasisPoints([newFeePercentage], {
         account: admin.account,
       })
-    ).to.be.rejectedWith("InvalidFeePercentage()");
+    ).to.be.rejectedWith("InvalidFeeBasisPoints()");
   });
   it("does not allow two fulfillers to use the same commitment", async function () {
     const { fulfiller, sender, entropy } = await loadFixture(

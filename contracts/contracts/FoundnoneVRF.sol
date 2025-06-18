@@ -58,7 +58,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     /**
      * @notice The percentage of the fee that goes to the contract owner
      */
-    uint256 public contractFeePercentage = 5;
+    uint256 public contractFeeBasisPoints = 500;
 
     /**
      * @notice A mapping to track the contract balance of each reward receiver
@@ -180,7 +180,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
     error InvalidCommitmentBlock();
     error InsufficientFee();
     error RequestNotFulfilled();
-    error InvalidFeePercentage();
+    error InvalidFeeBasisPoints();
     error InsufficientBalance();
     error RequestStillValid();
     error InvalidRequester();
@@ -218,7 +218,7 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
         entropies[_requestId] = _publicInputs[1];
 
         // calculate the fee
-        uint256 fee = (requestFee * contractFeePercentage) / 100;
+        uint256 fee = (requestFee * contractFeeBasisPoints) / 10_000;
 
         // update balances
         contractFeeBalance += fee;
@@ -497,13 +497,13 @@ contract FoundnoneVRF is PlonkVerifier, AccessControl {
      * @param _newPercentage The new percentage to be set
      * @dev This function can only be called by the admin role
      */
-    function setContractFeePercentage(
+    function setContractFeeBasisPoints(
         uint256 _newPercentage
     ) external onlyRole(ADMIN_ROLE) {
-        if (_newPercentage > 20) {
-            revert InvalidFeePercentage();
+        if (_newPercentage > 2000) {
+            revert InvalidFeeBasisPoints();
         }
-        contractFeePercentage = _newPercentage;
+        contractFeeBasisPoints = _newPercentage;
         emit ContractFeePercentageUpdated(_newPercentage);
     }
 
