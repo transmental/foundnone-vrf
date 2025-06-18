@@ -186,7 +186,6 @@ func subscribeLoop(
 				continue
 			}
 			if !checkCallbackAddressAndGasLimit(event.CallbackAddress, event.CallbackGasLimit, whitelistedCallbackAddresses, maxCallbackGasLimit) {
-				log.Printf("Callback address %s not whitelisted, skipping event %s", event.CallbackAddress.Hex(), event.RequestId.String())
 				continue
 			}
 			if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, payoutAddr, contractAddr, relayerUrl, relayLimiter, chainId); err != nil {
@@ -206,7 +205,7 @@ func checkCallbackAddressAndGasLimit(
 		return true
 	}
 
-	if gasRequired >= maxGas {
+	if gasRequired > maxGas {
 		log.Printf("Callback gas limit %d exceeds maximum allowed %d for address %s", gasRequired, maxGas, callbackAddress.Hex())
 		return false
 	}
