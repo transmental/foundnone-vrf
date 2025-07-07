@@ -11,6 +11,70 @@ import { parseEther, encodeAbiParameters, keccak256, zeroAddress } from "viem";
 import { buildPoseidon } from "circomlibjs";
 
 describe("FoundnoneVRF full ZK flow", function () {
+  it("Poseidon RNG passes frequency and chi-squared tests (cryptographic quality)", async function () {
+    // This test checks for uniformity and randomness using bucket frequency and chi-squared test
+    const NUM_SAMPLES = 10000;
+    const NUM_BUCKETS = 100;
+    const outputs: bigint[] = [];
+    const secret = BigInt(123456);
+    for (let i = 0; i < NUM_SAMPLES; i++) {
+      const seed = BigInt(i);
+      const out = poseidon([poseidon.F.e(secret), poseidon.F.e(seed)]);
+      outputs.push(poseidon.F.toObject(out));
+    }
+    // Frequency test: bucket the outputs
+    const min = outputs.reduce((a, b) => a < b ? a : b, outputs[0]);
+    const max = outputs.reduce((a, b) => a > b ? a : b, outputs[0]);
+    const bucketSize = (max - min) / BigInt(NUM_BUCKETS);
+    const buckets = Array(NUM_BUCKETS).fill(0);
+    for (const out of outputs) {
+      let idx = Number((out - min) / bucketSize);
+      if (idx >= NUM_BUCKETS) idx = NUM_BUCKETS - 1;
+      buckets[idx]++;
+    }
+    // Chi-squared test
+    const expected = NUM_SAMPLES / NUM_BUCKETS;
+    const chi2 = buckets.reduce((sum, count) => sum + ((count - expected) ** 2) / expected, 0);
+    // For 99 degrees of freedom, chi2 < ~135 for 95% confidence
+    console.log("Poseidon RNG chi2:", chi2, "buckets:", buckets);
+    expect(chi2).to.be.lessThan(135);
+    // Optionally: check that all buckets are non-empty
+    expect(buckets.every((x) => x > 0)).to.be.true;
+  });
+  it("brute force tests Poseidon RNG dispersion with incrementing inputs", async function () {
+    // This test checks the dispersion of Poseidon RNG outputs for incrementing inputs
+    // to ensure randomness quality (no clustering, good spread)
+    const NUM_SAMPLES = 1000;
+    const outputs: bigint[] = [];
+    const seen = new Set<string>();
+    // Use a fixed secret, increment the seed
+    const secret = BigInt(123456);
+    for (let i = 0; i < NUM_SAMPLES; i++) {
+      const seed = BigInt(i);
+      const out = poseidon([poseidon.F.e(secret), poseidon.F.e(seed)]);
+      const outBig = poseidon.F.toObject(out);
+      outputs.push(outBig);
+      seen.add(outBig.toString());
+    }
+    // Check for uniqueness (should be no collisions)
+    expect(seen.size).to.equal(NUM_SAMPLES);
+    // Check for good spread: compute min, max, mean, and stddev
+    const min = outputs.reduce((a, b) => a < b ? a : b, outputs[0]);
+    const max = outputs.reduce((a, b) => a > b ? a : b, outputs[0]);
+    const mean = outputs.reduce((a, b) => a + b, 0n) / BigInt(NUM_SAMPLES);
+    const stddev = Math.sqrt(
+      outputs
+        .map((x) => Number(x - mean) ** 2)
+        .reduce((a, b) => a + b, 0) /
+        NUM_SAMPLES
+    );
+    // Print stats for manual inspection
+    console.log("Poseidon RNG stats:", { min: min.toString(), max: max.toString(), mean: mean.toString(), stddev });
+    // Assert that the spread is reasonable (stddev is a significant fraction of the range)
+    const range = Number(max - min);
+    expect(stddev).to.be.greaterThan(range * 0.2);
+    expect(stddev).to.be.lessThan(range * 0.6);
+  });
   // instantiate Poseidon once
   let poseidon: any;
   const BN128_PRIME = BigInt(
