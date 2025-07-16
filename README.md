@@ -1,6 +1,6 @@
 # Foundnone VRF
 
-A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA or an external transaction relayer service enabling concurrency and scalability. The requester can provide a callback address to receive the entropy, or it can be retrieved by polling the contract. On the fulfillment side, the fulfiller can opt to whitelist specific callback addresses and/or specify a maximum amount of callback gas to prevent spam.
+A democratized Verifiable Random Function (VRF) system allowing anyone to request and fulfill entropy requests onchain for rewards. It can be used with a single EOA, an external transaction relayer service, or KMS Wallets for secure and concurrent transaction handling, enabling scalability and competition. The requester can provide a callback address to receive the entropy, or it can be retrieved by polling the contract. On the fulfillment side, the fulfiller can opt to whitelist specific callback addresses and/or specify a maximum amount of callback gas to prevent spam.
 
 # Deployed Addresses:
 
@@ -33,12 +33,12 @@ FULFILLER_PK=
 # Optional
 # The number of retries to make if the websocket connection fails.
 CONNECTION_RETRIES=5
-# The base URL of the relayer to use for sending transactions, this is preferably an internal URL. 
+# The base URL of the relayer to use for sending transactions, this is preferably an internal URL.
 # When set, the fulfillment is sent optimistically and the relayer service will handle fulfillment. (non blocking)
 RELAYER_URL=
-# Must be set if the RELAYER_URL is not set, if fulfilling is done by this golang service 
+# Must be set if the RELAYER_URL is not set, if fulfilling is done by this golang service
 # it is blocking and will wait for each fulfillment transaction to be mined.
-FULFILLER_PK= 
+FULFILLER_PK=
 #Optional, defaults to 10, the number of concurrent fulfillments that can be processed by an external transaction relayer service.
 RELAYER_CONCURRENCY_LIMIT=10
 # Optional, defaults to 100000, the maximum gas limit for each callback transaction.
@@ -46,6 +46,11 @@ MAX_CALLBACK_GAS_LIMIT=100000
 # Optionally set a list of whitelisted callback addresses that can be used to fulfill requests.
 # If set, only events with either the zero address or one of the whitelisted addresses will be processed.
 WHITELISTED_CALLBACK_ADDRESSES=0x1ec945E267CF78c53306d48D89f2cdb500026811,0x...
+
+# KMS Wallet Configuration
+# Enables transaction concurrency for higher throughput and competition.
+KMS_KEY=<your_kms_key>
+KMS_REGION=<your_kms_region>
 ```
 
 ## Build & Run Fulfiller
@@ -84,6 +89,7 @@ npm run dev
 - **Separate Reward Receiver**: Fulfillers can allocate rewards to a distinct address.
 - **Trusted Setup**: Reliably generated via a reputable Phase 2 Ptau file.
 - **Concurrent Fulfillment**: Multiple fulfillers can compete to fulfill requests, with the first valid proof winning the reward.
+- **KMS Wallet Support**: Enables transaction concurrency for higher throughput and competition by securely managing keys and automating account handling.
 - **External Transaction Relayer**: Supports running fulfillers as a service, allowing for concurrent processing of multiple requests.
 
 ## Trusted Setup
@@ -119,12 +125,158 @@ This `commitment` is set onchain before processing requests. Every proof must in
 - We use the block - 1 blockhash to ensure that fulfillment can still be made inside of the same block as the request.
 - Refunds are processed via the `refundUnfulfilledRequest` function, which returns the full request fee to the sender (the contract fee is not taken until fulfillment).
 
+## KMS Wallet Support
+
+The Foundnone VRF system includes support for KMS (Amazon Key Management Service) wallets, enabling secure and scalable management of private keys. This feature is designed to achieve transaction concurrency, allowing fulfillers to handle multiple requests simultaneously, thereby increasing competition and throughput.
+
+### Key Features of KMS Wallet Integration
+
+- **Secure Key Management**: Private keys are securely managed within AWS KMS, ensuring they are never exposed outside the secure environment.
+- **Automated Account Handling**: Automatically generates, encrypts, and stores private keys along with their commitments and secrets in a Postgres database.
+- **Higher Throughput**: Supports concurrent transactions for faster processing and increased competition among fulfillers.
+- **Seamless Ethereum Integration**: Provides a `SignerFn` compatible with go-ethereum for signing transactions directly using KMS.
+
+### How KMS Wallet Works
+
+Important: you must run a Postgres database and have AWS KMS configured with the necessary permissions to use the KMS key for encryption and decryption.
+
+1. **KeyVault**:
+   - The `KeyVault` is the core component for managing private keys.
+   - It interacts with AWS KMS to encrypt and decrypt private keys and stores the ciphertext in a Postgres database.
+   - **Key Functions**:
+     - **EncryptAndStoreKey**: Encrypts a private key using AWS KMS and stores it in the database along with its associated Ethereum address, commitment, and secret.
+     - **LoadAllKeys**: Retrieves all keys, commitments, and secrets from the database and decrypts them using AWS KMS.
+     - **GenerateAndStoreKeys**: Generates new Ethereum private keys, computes their commitments and secrets, and securely stores them.
+
+2. **KMSWallet**:
+   - Represents a single Ethereum wallet backed by AWS KMS.
+   - Derives the Ethereum address from the public key stored in KMS.
+   - Provides a `SignerFn` for signing Ethereum transactions directly using KMS.
+   - **Key Functions**:
+     - **deriveAddressFromKMS**: Fetches the public key from AWS KMS and computes the Ethereum address.
+     - **SignerFn**: Signs transactions using AWS KMS and computes the recovery ID (`V`) to produce a valid Ethereum signature.
+     - **GatherFunds**: (Placeholder) Sweeps all ETH from the KMS account to a specified address.
+
+3. **Transaction Signing**:
+   - Transactions are signed using AWS KMS, ensuring that private keys never leave the secure KMS environment.
+   - The `SignerFn` function handles Ethereum-specific signing requirements, including recovery ID computation.
+
+4. **Concurrency and Scalability**:
+   - The `KeyVault` can manage multiple keys, making it suitable for applications requiring high throughput.
+   - The `KMSWallet` uses a mutex (`mu`) to ensure thread-safe operations, enabling concurrent transaction handling.
+
+### How to Use KMS Wallet
+
+1. **Set Up Environment Variables**:
+   - Add the following variables to your `.env` file:
+
+     ```ini
+     KMS_KEY=<your_kms_key>
+     KMS_REGION=<your_kms_region>
+     ```
+
+2. **Monitor Logs**:
+   - Check the logs to verify that accounts are loaded, funded, and committed successfully.
+
+### Additional Requirements for KMS Wallet Mode
+
+When running the fulfiller in KMS mode, the following environment variables are required or optional for proper configuration:
+
+#### Required Variables
+
+- **Primary Wallet Private Key (`FULFILLER_PK`)**:
+  - The private key of the primary wallet is still required to fund the KMS wallets that are spun up.
+  - This wallet is used to bootstrap the KMS-backed accounts with initial ETH for gas.
+
+- **Postgres Connection String (`PG_CONN_STRING`)**:
+  - The connection string for the Postgres database where encrypted keys, commitments, and secrets are stored.
+
+- **AWS Credentials**:
+  - **`AWS_ACCESS_KEY_ID`**: The access key ID for AWS.
+  - **`AWS_SECRET_ACCESS_KEY`**: The secret access key for AWS.
+  - **`AWS_DEFAULT_REGION`**: The default AWS region for KMS operations.
+
+#### Optional Variables
+
+- **`MAX_ACCOUNTS`**:
+  - Specifies the maximum number of KMS-backed accounts to manage.
+  - Default: `5`.
+
+- **`WALLET_MODE`**:
+  - Specifies the wallet mode. Set to `kms` to enable KMS wallet functionality.
+
+- **`POOL_MIN_GAS_WEI`**:
+  - The minimum gas threshold (in wei) for KMS-backed accounts.
+  - Default: `100000000000000` (0.005 ETH).
+
+- **`POOL_REFILL_AMOUNT_WEI`**:
+  - The amount of ETH (in wei) to refill KMS-backed accounts when their balance falls below the threshold.
+  - Default: `1000000000000000` (0.01 ETH).
+
+### Example `.env` Configuration for KMS Mode
+
+```ini
+# Required Variables
+FULFILLER_PK="<primary_wallet_private_key>"
+PG_CONN_STRING="<postgres_connection_string>"
+AWS_ACCESS_KEY_ID="<aws_access_key_id>"
+AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
+AWS_DEFAULT_REGION="<aws_default_region>"
+
+# Optional Variables
+MAX_ACCOUNTS=5
+WALLET_MODE=kms
+POOL_MIN_GAS_WEI=100000000000000
+POOL_REFILL_AMOUNT_WEI=1000000000000000
+```
+
+### Running Database Migrations
+
+To apply all unapplied migrations in the `fulfiller/migrations` folder, you can use the `golang-migrate` tool. Follow these steps:
+
+1. **Install `golang-migrate`**:
+
+   ```zsh
+   brew install golang-migrate
+   ```
+
+2. **Run All Unapplied Migrations**:
+
+   ```zsh
+   migrate -path fulfiller/migrations -database "<postgres_connection_string>" up
+   ```
+
+   Replace `<postgres_connection_string>` with your actual Postgres connection string.
+
+3. **Verify Applied Migrations**:
+   To check which migrations have been applied, run:
+   ```zsh
+   migrate -path fulfiller/migrations -database "<postgres_connection_string>" version
+   ```
+
+### Benefits of KMS Wallet Integration
+
+- **Enhanced Security**: Keys are securely managed within AWS KMS, reducing the risk of exposure.
+- **Simplified Management**: Automates key generation, funding, and commitment setup.
+- **Improved Scalability**: Handles multiple accounts and transactions concurrently, increasing throughput and competition.
+- **Ethereum Compatibility**: Provides seamless integration with Ethereum's transaction signing requirements.
+
+### Debugging and Logging
+
+- Debug logs are included to provide visibility into key storage, updates, and signing operations.
+- Example log output:
+  ```
+  [KMS DEBUG] Storing key for address 0x123... with commitment abc123 and secret xyz456 and ciphertext ...
+  [KMS DEBUG] Updated commitment and secret for address 0x123... with comm: abc123, secret xyz456
+  ```
+
 ## Why Foundnone VRF is Different
 
 - **Decentralized Fulfillment**: No single oracle—anyone can run a fulfiller service.
 - **Fulfiller Incentivization**: Earn rewards for fulfilling requests.
-- **Speed and Efficiency**: Fast and efficient onchain verification, proof to fulfillment times can be under 3 seconds depending on network congestion and fulfillers hardware.
+- **Speed and Efficiency**: Fast and efficient onchain verification, proof to fulfillment times can be under 2 seconds depending on network congestion and fulfiller hardware.
 - **Competitive Fulfillment**: Fulfiller rewards are based on the number of requests processed.
+- **KMS Wallet Integration**: Achieves higher throughput and competition by enabling concurrent transaction handling.
 - **Full Transparency and Easy Setup**: Open-source prover pipeline and Dockerized deployment.
 
 ## Contract Testing
@@ -171,6 +323,13 @@ MIT © 2025 Zachary Owens
 | **Fulfiller**                        | An entity that runs the prover and submits entropy proofs to the Foundnone VRF contract for rewards.                           |
 | **Callback Address**                 | An optional address provided by the requester to receive the entropy directly, or it can be retrieved by polling the contract. |
 | **Callback Gas Limit**               | The maximum amount of gas that can be used for the callback function when sending the entropy to the callback address.         |
+| **KMS Wallet**                       | A wallet backed by AWS Key Management Service (KMS) for secure and scalable private key management.                            |
+| **KeyVault**                         | A component that manages private keys, encrypts them using KMS, and stores them in a Postgres database.                        |
+| **SignerFn**                         | A function provided by the KMS wallet to sign Ethereum transactions directly using KMS.                                        |
+| **POOL_MIN_GAS_WEI**                 | The minimum gas threshold (in wei) for KMS-backed accounts. Default: 0.005 ETH.                                                |
+| **POOL_REFILL_AMOUNT_WEI**           | The amount of ETH (in wei) to refill KMS-backed accounts when their balance falls below the threshold. Default: 0.01 ETH.      |
+| **MAX_ACCOUNTS**                     | The maximum number of KMS-backed accounts to manage. Default: 5.                                                               |
+| **WALLET_MODE**                      | Specifies the wallet mode. Set to `kms` to enable KMS wallet functionality.                                                    |
 
 # FAQ
 
@@ -258,6 +417,10 @@ Rewards are paid out competitively based on proof submissions.
 ---
 
 ## ❓ How does a fulfiller protect against callback spam?
+
 Fulfillers can:
+
 - Whitelist specific callback addresses to ensure only trusted recipients receive entropy.
 - Set a maximum gas limit for callbacks to prevent excessive costs from spammy requests.
+
+---

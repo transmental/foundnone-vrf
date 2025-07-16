@@ -32,6 +32,7 @@ func SuggestFeesAndGetNonce(ctx context.Context, client *ethclient.Client, auth 
 	auth.GasTipCap = tip
 	auth.GasFeeCap = new(big.Int).Add(base, tip)
 	auth.Nonce = new(big.Int).SetUint64(nonce)
+	auth.GasPrice = nil
 	return nil
 }
 
@@ -86,7 +87,10 @@ func SendWithRetry(
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
-		fmt.Printf("GasFeeCap: %s, GasTipCap: %s\n", auth.GasFeeCap.String(), auth.GasTipCap.String())
+		if attempt > 0 {
+			BumpFee(auth, bumpFactor, client, ctx)
+		}
+		fmt.Printf("Attempt %d: GasPrice: %s, Nonce: %s\n", attempt+1, auth.GasPrice.String(), auth.Nonce.String())
 
 		rec, tx, err := waitMinedWithTimeout(ctx, client, auth, txFunc, waitTimeout)
 		if err == nil && rec.Status == types.ReceiptStatusSuccessful {
@@ -94,7 +98,6 @@ func SendWithRetry(
 		}
 
 		if rec != nil && rec.Status == types.ReceiptStatusFailed {
-			// Try to decode revert reason:
 			reason, derr := getRevertReason(ctx, client, tx, auth.From)
 			if derr != nil {
 				lastErr = fmt.Errorf("tx reverted, reason decode failed: %w", derr)
@@ -108,14 +111,9 @@ func SendWithRetry(
 			lastErr = err
 		}
 
-		fmt.Printf("Transaction failed: %s\n", lastErr.Error())
+		fmt.Printf("Transaction attempt failed: %s\n", lastErr.Error())
 
-		if attempt < maxRetries && strings.Contains(lastErr.Error(), "timeout") {
-			BumpFee(auth, bumpFactor, client, ctx)
-			continue
-		}
-		if attempt < maxRetries && strings.Contains(lastErr.Error(), "underpriced") {
-			BumpFee(auth, bumpFactor, client, ctx)
+		if attempt < maxRetries && (strings.Contains(lastErr.Error(), "timeout") || strings.Contains(lastErr.Error(), "underpriced")) {
 			continue
 		}
 		break
@@ -177,4 +175,24 @@ func getRevertReason(ctx context.Context, client *ethclient.Client, tx *types.Tr
 	reasonLen := new(big.Int).SetBytes(data[4+32 : 4+32+32]).Int64()
 	reasonBytes := data[4+32+32 : 4+32+32+reasonLen]
 	return string(reasonBytes), nil
+}
+
+func SendETH(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts, to common.Address, amount *big.Int, chainID *big.Int) (*types.Receipt, error) {
+	txFunc := func(a *bind.TransactOpts) (*types.Transaction, error) {
+		tx := types.NewTx(&types.DynamicFeeTx{
+			Nonce:     a.Nonce.Uint64(),
+			Gas:       21000,
+			GasFeeCap: a.GasFeeCap,
+			GasTipCap: a.GasTipCap,
+			To:        &to,
+			Value:     amount,
+		})
+		signedTx, err := a.Signer(a.From, tx)
+		if err != nil {
+			return nil, err
+		}
+		return signedTx, client.SendTransaction(ctx, signedTx)
+	}
+
+	return SendWithRetry(ctx, client, auth, txFunc, 5, 0.5, 30*time.Second)
 }
