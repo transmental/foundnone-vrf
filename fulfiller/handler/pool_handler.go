@@ -95,7 +95,7 @@ func HandleEventWithPool(
 			return contract.SubmitEntropy(a, proofArr, pubArr, event.RequestId, payout)
 		},
 		5,
-		0.12,
+		0.2,
 		30*time.Second,
 	)
 

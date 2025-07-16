@@ -110,7 +110,7 @@ func LoadConfig() (Config, error) {
 		WSRPCURL:                     os.Getenv("WS_RPC_URL"),
 		HTTPRPCURL:                   os.Getenv("HTTP_RPC_URL"),
 		ContractAddress:              os.Getenv("CONTRACT_ADDRESS"),
-		FulfillerPK:                  os.Getenv("FULFILLER_PK"),
+		FulfillerPK:                  os.Getenv("PRIMARY_PK"),
 		PayoutAddress:                os.Getenv("PAYOUT_ADDRESS"),
 		PGConnString:                 os.Getenv("PG_CONN_STRING"),
 		ChainID:                      chainID,

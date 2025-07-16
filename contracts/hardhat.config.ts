@@ -10,6 +10,11 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   networks: {
+    base: {
+      url: "https://mainnet.base.org",
+      accounts: [process.env.PRIVATE_KEY!],
+      chainId: 8453,
+    },
     baseSepolia: {
       url: "https://sepolia.base.org",
       accounts: [process.env.PRIVATE_KEY!],
@@ -37,11 +42,20 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
+      base: process.env.BASESCAN_API_KEY!,
       baseSepolia: process.env.BASESCAN_API_KEY!,
       curtis: process.env.APESCAN_API_KEY!,
       apeChain: process.env.APESCAN_API_KEY!,
     },
     customChains: [
+      {
+        chainId: 84532,
+        network: "base",
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org",
+        },
+      },
       {
         chainId: 84532,
         network: "baseSepolia",

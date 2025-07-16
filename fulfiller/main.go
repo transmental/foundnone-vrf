@@ -263,7 +263,7 @@ func bootstrapPoolAccounts(
 				func(a *bind.TransactOpts) (*types.Transaction, error) {
 					return contract.SetCommitment(a, want)
 				},
-				5, 0.12, 30*time.Second,
+				5, 0.2, 30*time.Second,
 			)
 			if err != nil {
 				log.Printf("[WARN] setCommitment failed: %v", err)
@@ -334,7 +334,7 @@ func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.T
 			func(a *bind.TransactOpts) (*types.Transaction, error) {
 				return contract.SetCommitment(a, comm)
 			},
-			5, 0.12, 30*time.Second)
+			5, 0.2, 30*time.Second)
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("submit commitment transaction: %w", err)

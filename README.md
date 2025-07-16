@@ -4,9 +4,8 @@ A democratized Verifiable Random Function (VRF) system allowing anyone to reques
 
 # Deployed Addresses:
 
-- Base Sepolia: `0x6011C31271b321FcE089FB898ecd487BA96CC73f`
-- Curtis (Apechain Testnet): `0x25f27467377DaC26B79784603A0b2DcDaa3b67cf`
-- Base: `pending further testing...`
+- Base: `0x599613443B57dF5FB64C3C0e5bab72311f9aB040`
+- Base Sepolia: `0x5D4d84dea36dac4e5146bbb09b6529a74bec6f45`
 
 # Quick Start
 
@@ -28,7 +27,7 @@ PAYOUT_ADDRESS=
 # The chain ID of the network you are connecting to.
 CHAIN_ID=84532
 # The private key of the account that will be used to sign fulfillment transactions. Do not prefix with '0x'.
-FULFILLER_PK=
+PRIMARY_PK=
 
 # Optional
 # The number of retries to make if the websocket connection fails.
@@ -38,7 +37,7 @@ CONNECTION_RETRIES=5
 RELAYER_URL=
 # Must be set if the RELAYER_URL is not set, if fulfilling is done by this golang service
 # it is blocking and will wait for each fulfillment transaction to be mined.
-FULFILLER_PK=
+PRIMARY_PK=
 #Optional, defaults to 10, the number of concurrent fulfillments that can be processed by an external transaction relayer service.
 RELAYER_CONCURRENCY_LIMIT=10
 # Optional, defaults to 100000, the maximum gas limit for each callback transaction.
@@ -184,7 +183,7 @@ When running the fulfiller in KMS mode, the following environment variables are 
 
 #### Required Variables
 
-- **Primary Wallet Private Key (`FULFILLER_PK`)**:
+- **Primary Wallet Private Key (`PRIMARY_PK`)**:
   - The private key of the primary wallet is still required to fund the KMS wallets that are spun up.
   - This wallet is used to bootstrap the KMS-backed accounts with initial ETH for gas.
 
@@ -217,7 +216,7 @@ When running the fulfiller in KMS mode, the following environment variables are 
 
 ```ini
 # Required Variables
-FULFILLER_PK="<primary_wallet_private_key>"
+PRIMARY_PK="<primary_wallet_private_key>"
 PG_CONN_STRING="<postgres_connection_string>"
 AWS_ACCESS_KEY_ID="<aws_access_key_id>"
 AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
