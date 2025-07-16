@@ -33,7 +33,7 @@ func Generate() (*big.Int, *big.Int, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Printf("generated commitment: %s, secret %s", comm, s)
+	log.Printf("generated commitment: %s", comm)
 	return s, comm, nil
 }
 

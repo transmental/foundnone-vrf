@@ -90,7 +90,7 @@ func SendWithRetry(
 		if attempt > 0 {
 			BumpFee(auth, bumpFactor, client, ctx)
 		}
-		fmt.Printf("Attempt %d: GasPrice: %s, Nonce: %s\n", attempt+1, auth.GasPrice.String(), auth.Nonce.String())
+		fmt.Printf("Attempt %d: Nonce: %s\n", attempt+1, auth.Nonce.String())
 
 		rec, tx, err := waitMinedWithTimeout(ctx, client, auth, txFunc, waitTimeout)
 		if err == nil && rec.Status == types.ReceiptStatusSuccessful {

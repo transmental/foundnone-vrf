@@ -1,7 +1,6 @@
 package kmswallet
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
 	"database/sql"
@@ -65,8 +64,6 @@ func (kv *KeyVault) EncryptAndStoreKey(priv *ecdsa.PrivateKey, commitment, secre
 		return fmt.Errorf("KMS encrypt: %w", err)
 	}
 	address := crypto.PubkeyToAddress(priv.PublicKey).Hex()
-	// log all data going into the DB
-	fmt.Printf("[KMS DEBUG] Storing key for address %s with commitment %s and secret %s and ciphertext %s\n", address, commitment, secret, encOut.CiphertextBlob)
 	_, err = kv.db.Exec(
 		`INSERT INTO kms_eth_keys (address, kms_key_id, region, ciphertext, commitment, secret) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (address) DO NOTHING`,
 		address, kv.kmsKeyID, kv.region, encOut.CiphertextBlob, commitment, secret,
@@ -82,7 +79,7 @@ func UpdateCommitmentAndSecretInDbForAddress(kv *KeyVault, address common.Addres
 	if err != nil {
 		return fmt.Errorf("update commitment and secret in DB: %w", err)
 	}
-	fmt.Printf("[KMS DEBUG] Updated commitment and secret for address %s\n", address)
+	fmt.Printf("[KMS DEBUG] Updated commitment and secret for address %s with comm: %s", address, commitment)
 	return nil
 }
 
@@ -208,18 +205,10 @@ func (w *KMSWallet) SignerFn(chainID *big.Int) bind.SignerFn {
 	}
 }
 
-// GatherFunds sweeps all ETH from the KMS account to the given address
-func (w *KMSWallet) GatherFunds(ctx context.Context, client bind.ContractBackend, to common.Address) error {
-	// TODO: Query balance, build and sign tx using KMS, send tx
-	fmt.Printf("Would sweep funds from %s to %s\n", w.Address.Hex(), to.Hex())
-	return nil
-}
-
 // --- Helpers ---
 
 // parseKMSPublicKey parses a DER-encoded KMS public key to ecdsa.PublicKey
 func parseKMSPublicKey(derBytes []byte) (*ecdsa.PublicKey, error) {
-	fmt.Printf("[KMS DEBUG] DER bytes: %x\n", derBytes)
 	// Try Go x509 first
 	pub, err := x509.ParsePKIXPublicKey(derBytes)
 	if err == nil {
