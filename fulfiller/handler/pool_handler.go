@@ -84,7 +84,7 @@ func HandleEventWithPool(
 	auth := slot.BuildTransactOpts(signerFn(big.NewInt(chainId)))
 
 	// Log the values before proof generation
-	log.Printf("[DEBUG] Generating proof for account %s with secret: %s, commitment: %s", slot.Address.Hex(), slot.Secret, slot.Commitment)
+	log.Printf("[DEBUG] Generating proof for account %s with commitment: %s", slot.Address.Hex(), slot.Commitment)
 	log.Printf("[DEBUG] Seed: %s, Entropy: %s", seed.String(), entropy.String())
 
 	receipt, err := tx.SendWithRetry(
