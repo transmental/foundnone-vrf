@@ -113,7 +113,7 @@ func SendWithRetry(
 
 		fmt.Printf("Transaction attempt failed: %s\n", lastErr.Error())
 
-		if attempt < maxRetries && (strings.Contains(lastErr.Error(), "timeout") || strings.Contains(lastErr.Error(), "underpriced")) {
+		if attempt < maxRetries && (strings.Contains(lastErr.Error(), "timeout") || strings.Contains(lastErr.Error(), "underpriced") || strings.Contains(lastErr.Error(), "nonce too low") || strings.Contains(lastErr.Error(), "block base fee")) {
 			continue
 		}
 		break
