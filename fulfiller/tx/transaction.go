@@ -29,8 +29,11 @@ func SuggestFeesAndGetNonce(ctx context.Context, client *ethclient.Client, auth 
 	if err != nil {
 		return err
 	}
+
+	baseFee := new(big.Int).Mul(base, big.NewInt(12))
+	baseFee = new(big.Int).Div(baseFee, big.NewInt(10))
 	auth.GasTipCap = tip
-	auth.GasFeeCap = new(big.Int).Add(base, tip)
+	auth.GasFeeCap = baseFee
 	auth.Nonce = new(big.Int).SetUint64(nonce)
 	auth.GasPrice = nil
 	return nil
@@ -113,7 +116,7 @@ func SendWithRetry(
 
 		fmt.Printf("Transaction attempt failed: %s\n", lastErr.Error())
 
-		if attempt < maxRetries && (strings.Contains(lastErr.Error(), "timeout") || strings.Contains(lastErr.Error(), "underpriced")) {
+		if attempt < maxRetries && (strings.Contains(lastErr.Error(), "timeout") || strings.Contains(lastErr.Error(), "underpriced") || strings.Contains(lastErr.Error(), "nonce too low") || strings.Contains(lastErr.Error(), "block base fee")) {
 			continue
 		}
 		break
