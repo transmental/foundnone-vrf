@@ -23,8 +23,8 @@ describe("FoundnoneVRF full ZK flow", function () {
       outputs.push(poseidon.F.toObject(out));
     }
     // Frequency test: bucket the outputs
-    const min = outputs.reduce((a, b) => a < b ? a : b, outputs[0]);
-    const max = outputs.reduce((a, b) => a > b ? a : b, outputs[0]);
+    const min = outputs.reduce((a, b) => (a < b ? a : b), outputs[0]);
+    const max = outputs.reduce((a, b) => (a > b ? a : b), outputs[0]);
     const bucketSize = (max - min) / BigInt(NUM_BUCKETS);
     const buckets = Array(NUM_BUCKETS).fill(0);
     for (const out of outputs) {
@@ -34,7 +34,10 @@ describe("FoundnoneVRF full ZK flow", function () {
     }
     // Chi-squared test
     const expected = NUM_SAMPLES / NUM_BUCKETS;
-    const chi2 = buckets.reduce((sum, count) => sum + ((count - expected) ** 2) / expected, 0);
+    const chi2 = buckets.reduce(
+      (sum, count) => sum + (count - expected) ** 2 / expected,
+      0
+    );
     // For 99 degrees of freedom, chi2 < ~135 for 95% confidence
     console.log("Poseidon RNG chi2:", chi2, "buckets:", buckets);
     expect(chi2).to.be.lessThan(135);
@@ -59,17 +62,20 @@ describe("FoundnoneVRF full ZK flow", function () {
     // Check for uniqueness (should be no collisions)
     expect(seen.size).to.equal(NUM_SAMPLES);
     // Check for good spread: compute min, max, mean, and stddev
-    const min = outputs.reduce((a, b) => a < b ? a : b, outputs[0]);
-    const max = outputs.reduce((a, b) => a > b ? a : b, outputs[0]);
+    const min = outputs.reduce((a, b) => (a < b ? a : b), outputs[0]);
+    const max = outputs.reduce((a, b) => (a > b ? a : b), outputs[0]);
     const mean = outputs.reduce((a, b) => a + b, 0n) / BigInt(NUM_SAMPLES);
     const stddev = Math.sqrt(
-      outputs
-        .map((x) => Number(x - mean) ** 2)
-        .reduce((a, b) => a + b, 0) /
+      outputs.map((x) => Number(x - mean) ** 2).reduce((a, b) => a + b, 0) /
         NUM_SAMPLES
     );
     // Print stats for manual inspection
-    console.log("Poseidon RNG stats:", { min: min.toString(), max: max.toString(), mean: mean.toString(), stddev });
+    console.log("Poseidon RNG stats:", {
+      min: min.toString(),
+      max: max.toString(),
+      mean: mean.toString(),
+      stddev,
+    });
     // Assert that the spread is reasonable (stddev is a significant fraction of the range)
     const range = Number(max - min);
     expect(stddev).to.be.greaterThan(range * 0.2);
@@ -158,15 +164,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -237,7 +243,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     expect(callbackEntropy).to.equal(entropySignal);
 
     console.log("callback entropy:", callbackEntropy);
-    console.log("entropy sig:", entropySignal)
+    console.log("entropy sig:", entropySignal);
 
     const fulfillerContractBalance =
       await entropy.read.getRewardReceiverBalance([fulfiller.account.address]);
@@ -340,15 +346,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -441,15 +447,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -553,15 +559,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(2);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(2);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -653,15 +659,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -757,15 +763,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
       blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -1057,9 +1063,8 @@ describe("FoundnoneVRF full ZK flow", function () {
     ).to.be.rejectedWith("InvalidFeeBasisPoints()");
   });
   it("does not allow two fulfillers to use the same commitment", async function () {
-    const { fulfiller, sender, entropy } = await loadFixture(
-      deployEntropyFixture
-    );
+    const { fulfiller, sender, entropy } =
+      await loadFixture(deployEntropyFixture);
     const secret = BigInt(123456);
     const zero = poseidon.F.e(0);
     const commField = poseidon([poseidon.F.e(secret), zero]);
@@ -1095,5 +1100,13 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(await entropy.read.commitmentInUse([initialCommHex as any])).to.be
       .false;
+  });
+
+  it("should reject invalid withdrawal attempts", async function () {
+    const { sender, entropy } = await loadFixture(deployEntropyFixture);
+
+    await expect(
+      entropy.write.withdrawRewardReceiverBalance({ account: sender.account })
+    ).to.be.rejectedWith("InsufficientBalance()");
   });
 });

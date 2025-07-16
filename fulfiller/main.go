@@ -29,7 +29,8 @@ import (
 )
 
 func main() {
-	retrieve := flag.Bool("gather", false, "Sweep KMS balances and exit")
+	// gather command cli flags
+	gather := flag.Bool("gather", false, "Sweep KMS balances and exit")
 	dbDSN := flag.String("db", "", "Postgres DSN")
 	rpcURL := flag.String("rpc", "", "Ethereum HTTP RPC URL")
 	chainID := flag.Int64("chain", 0, "Chain ID for transactions")
@@ -37,15 +38,32 @@ func main() {
 	toAddr := flag.String("to", "", "Destination address")
 	kmsKey := flag.String("kms_key", "", "Must include KMS Key")
 	kmsRegion := flag.String("kms_region", "", "Must include KMS Region")
+
+	// collect command cli flags
+	collect := flag.Bool("collect", false, "collect VRF request fulfillment earnings and exit")
+	key := flag.String("key", "", "private key for collecting fees")
+	address := flag.String("address", "", "contract address to collect fees from")
+	chainId := flag.Int64("chain_id", 0, "Chain ID for collecting fees")
+	rpcUrl := flag.String("rpc_url", "", "Ethereum HTTP RPC URL for given chain ID")
+
 	flag.Parse()
-	if *retrieve {
+	switch {
+	case *gather:
 		if err := cli.Gather(
 			*dbDSN, *rpcURL, *chainID, *threshold, *toAddr, *kmsKey, *kmsRegion,
 		); err != nil {
 			log.Fatalf("gather error: %v", err)
 		}
-	} else if err := run(context.Background()); err != nil {
-		log.Fatal(err)
+	case *collect:
+		if err := cli.CollectFees(
+			*key, *address, *chainId, *rpcUrl,
+		); err != nil {
+			log.Fatalf("collect error: %v", err)
+		}
+	default:
+		if err := run(context.Background()); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 

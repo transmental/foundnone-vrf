@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	_ "github.com/lib/pq"
 
+	"foundnone-vrf/abi"
 	"foundnone-vrf/kmswallet"
 	"foundnone-vrf/tx"
 )
@@ -27,7 +28,6 @@ func Gather(
 		dsn, rpcURL, chainID, thresholdEth, toAddr, kmsKey, region,
 	)
 
-	// 1) Connect to Postgres and load keys
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return fmt.Errorf("postgres open: %w", err)
@@ -101,5 +101,45 @@ func Gather(
 			log.Printf("[%s] swept %s wei (fee %s) in tx %s", addr.Hex(), sendAmount, fee, rec.TxHash.Hex())
 		}
 	}
+	return nil
+}
+
+func CollectFees(
+	key, address string,
+	chainId int64,
+	rpcUrl string,
+) error {
+	log.Printf("[CollectFees] Starting with key=%s address=%s chainId=%d rpcUrl=%s",
+		key, address, chainId, rpcUrl,
+	)
+
+	client, err := ethclient.Dial(rpcUrl)
+	if err != nil {
+		return fmt.Errorf("dial rpc: %w", err)
+	}
+
+	privKey, err := crypto.HexToECDSA(key)
+	if err != nil {
+		return fmt.Errorf("parse private key: %w", err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(chainId))
+	if err != nil {
+		return fmt.Errorf("new transactor: %w", err)
+	}
+
+	contractAddr := common.HexToAddress(address)
+
+	contract, err := abi.NewAbi(contractAddr, client)
+	if err != nil {
+		return fmt.Errorf("contract binding: %w", err)
+	}
+
+	tx, err := contract.WithdrawRewardReceiverBalance(auth)
+	if err != nil {
+		return fmt.Errorf("withdrawRewardReceiverBalance call failed: %w", err)
+	}
+
+	log.Printf("[CollectFees] Transaction sent: %s", tx.Hash().Hex())
 	return nil
 }
