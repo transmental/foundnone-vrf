@@ -82,7 +82,7 @@ func UpdateCommitmentAndSecretInDbForAddress(kv *KeyVault, address common.Addres
 	if err != nil {
 		return fmt.Errorf("update commitment and secret in DB: %w", err)
 	}
-	fmt.Printf("[KMS DEBUG] Updated commitment and secret for address %s with comm: %s, secret %s\n", address, commitment, secret)
+	fmt.Printf("[KMS DEBUG] Updated commitment and secret for address %s\n", address)
 	return nil
 }
 
