@@ -159,7 +159,7 @@ func initKmsPool(
 	signerFn := buildPoolSignerFn(keyMap, cfg.ChainID)
 
 	// 4d. On startup, fund low-balance accounts and set their commitment
-	if err := bootstrapPoolAccounts(ctx, httpc, contract, cfg, pool, keyMap, auth); err != nil {
+	if err := bootstrapPoolAccounts(ctx, httpc, contract, cfg, pool, keyMap, auth, vault); err != nil {
 		return nil, nil, err
 	}
 
@@ -223,6 +223,7 @@ func bootstrapPoolAccounts(
 	pool *kmswallet.AccountPool,
 	keyMap map[common.Address]*ecdsa.PrivateKey,
 	auth *bind.TransactOpts,
+	vault *kmswallet.KeyVault,
 ) error {
 	for i, slot := range pool.Accounts {
 		log.Printf("--- pool[%d] %s ---", i, slot.Address.Hex())
@@ -256,17 +257,31 @@ func bootstrapPoolAccounts(
 			continue
 		}
 		want := new(big.Int)
-		want.SetString(slot.Commitment, 10)
+		want.SetString(slot.Commitment, 0)
 		if onChain.Cmp(want) != 0 {
 			poolAuth, _ := bind.NewKeyedTransactorWithChainID(keyMap[slot.Address], big.NewInt(cfg.ChainID))
-			_, err := tx.SendWithRetry(ctx, httpc, poolAuth,
+			newSecret, newComm, err := commitment.Generate()
+			if err != nil {
+				log.Printf("[WARN] commitment generation failed: %v", err)
+				continue
+			}
+			slot.Secret = newSecret.String()
+			slot.Commitment = newComm.String()
+			_, err = tx.SendWithRetry(ctx, httpc, poolAuth,
 				func(a *bind.TransactOpts) (*types.Transaction, error) {
-					return contract.SetCommitment(a, want)
+					return contract.SetCommitment(a, newComm)
 				},
 				5, 0.2, 30*time.Second,
 			)
 			if err != nil {
 				log.Printf("[WARN] setCommitment failed: %v", err)
+			}
+
+			// update the commitment and secret in the db
+			if err := kmswallet.UpdateCommitmentAndSecretInDbForAddress(vault, slot.Address, slot.Commitment, slot.Secret); err != nil {
+				log.Printf("[WARN] update commitment/secret in db failed: %v", err)
+			} else {
+				log.Printf("Updated commitment for %s: %s", slot.Address.Hex(), slot.Commitment)
 			}
 		}
 	}
