@@ -7,10 +7,80 @@ import { expect } from "chai";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import { parseEther, encodeAbiParameters, keccak256 } from "viem";
+import { parseEther, encodeAbiParameters, keccak256, zeroAddress } from "viem";
 import { buildPoseidon } from "circomlibjs";
 
 describe("FoundnoneVRF full ZK flow", function () {
+  it("Poseidon RNG passes frequency and chi-squared tests (cryptographic quality)", async function () {
+    // This test checks for uniformity and randomness using bucket frequency and chi-squared test
+    const NUM_SAMPLES = 10000;
+    const NUM_BUCKETS = 100;
+    const outputs: bigint[] = [];
+    const secret = BigInt(123456);
+    for (let i = 0; i < NUM_SAMPLES; i++) {
+      const seed = BigInt(i);
+      const out = poseidon([poseidon.F.e(secret), poseidon.F.e(seed)]);
+      outputs.push(poseidon.F.toObject(out));
+    }
+    // Frequency test: bucket the outputs
+    const min = outputs.reduce((a, b) => (a < b ? a : b), outputs[0]);
+    const max = outputs.reduce((a, b) => (a > b ? a : b), outputs[0]);
+    const bucketSize = (max - min) / BigInt(NUM_BUCKETS);
+    const buckets = Array(NUM_BUCKETS).fill(0);
+    for (const out of outputs) {
+      let idx = Number((out - min) / bucketSize);
+      if (idx >= NUM_BUCKETS) idx = NUM_BUCKETS - 1;
+      buckets[idx]++;
+    }
+    // Chi-squared test
+    const expected = NUM_SAMPLES / NUM_BUCKETS;
+    const chi2 = buckets.reduce(
+      (sum, count) => sum + (count - expected) ** 2 / expected,
+      0
+    );
+    // For 99 degrees of freedom, chi2 < ~135 for 95% confidence
+    console.log("Poseidon RNG chi2:", chi2, "buckets:", buckets);
+    expect(chi2).to.be.lessThan(135);
+    // Optionally: check that all buckets are non-empty
+    expect(buckets.every((x) => x > 0)).to.be.true;
+  });
+  it("brute force tests Poseidon RNG dispersion with incrementing inputs", async function () {
+    // This test checks the dispersion of Poseidon RNG outputs for incrementing inputs
+    // to ensure randomness quality (no clustering, good spread)
+    const NUM_SAMPLES = 1000;
+    const outputs: bigint[] = [];
+    const seen = new Set<string>();
+    // Use a fixed secret, increment the seed
+    const secret = BigInt(123456);
+    for (let i = 0; i < NUM_SAMPLES; i++) {
+      const seed = BigInt(i);
+      const out = poseidon([poseidon.F.e(secret), poseidon.F.e(seed)]);
+      const outBig = poseidon.F.toObject(out);
+      outputs.push(outBig);
+      seen.add(outBig.toString());
+    }
+    // Check for uniqueness (should be no collisions)
+    expect(seen.size).to.equal(NUM_SAMPLES);
+    // Check for good spread: compute min, max, mean, and stddev
+    const min = outputs.reduce((a, b) => (a < b ? a : b), outputs[0]);
+    const max = outputs.reduce((a, b) => (a > b ? a : b), outputs[0]);
+    const mean = outputs.reduce((a, b) => a + b, 0n) / BigInt(NUM_SAMPLES);
+    const stddev = Math.sqrt(
+      outputs.map((x) => Number(x - mean) ** 2).reduce((a, b) => a + b, 0) /
+        NUM_SAMPLES
+    );
+    // Print stats for manual inspection
+    console.log("Poseidon RNG stats:", {
+      min: min.toString(),
+      max: max.toString(),
+      mean: mean.toString(),
+      stddev,
+    });
+    // Assert that the spread is reasonable (stddev is a significant fraction of the range)
+    const range = Number(max - min);
+    expect(stddev).to.be.greaterThan(range * 0.2);
+    expect(stddev).to.be.lessThan(range * 0.6);
+  });
   // instantiate Poseidon once
   let poseidon: any;
   const BN128_PRIME = BigInt(
@@ -18,17 +88,24 @@ describe("FoundnoneVRF full ZK flow", function () {
   );
 
   async function deployEntropyFixture() {
-    const [admin, fulfiller, sender] = await hre.viem.getWalletClients();
+    const [admin, fulfiller, sender, otherAccount] =
+      await hre.viem.getWalletClients();
     const entropy = await hre.viem.deployContract("FoundnoneVRF", [
       admin.account.address,
     ]);
+    const mockCallBackReceiver = await hre.viem.deployContract(
+      "MockEntropyReceiver",
+      [entropy.address]
+    );
     const publicClient = await hre.viem.getPublicClient();
     return {
       admin,
       fulfiller,
       sender,
       entropy,
+      mockCallBackReceiver,
       publicClient,
+      otherAccount,
     };
   }
 
@@ -36,9 +113,16 @@ describe("FoundnoneVRF full ZK flow", function () {
     poseidon = await buildPoseidon();
   });
 
-  it("does a full ZK prove then submitEntropy and updates commitment, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
-    const { fulfiller, sender, entropy, publicClient, admin } =
-      await loadFixture(deployEntropyFixture);
+  it("does a full ZK prove then submitEntropy and updates commitment, fulfill callback, award the proper fee to the fulfiller and contract, and allow the withdrawal of the fee, as well as reject a refund request", async function () {
+    const {
+      fulfiller,
+      sender,
+      entropy,
+      publicClient,
+      admin,
+      otherAccount,
+      mockCallBackReceiver,
+    } = await loadFixture(deployEntropyFixture);
 
     // 1) pick a private secret, build initial commitment = Poseidon(secret, 0)
     const secret = BigInt(123456);
@@ -49,16 +133,28 @@ describe("FoundnoneVRF full ZK flow", function () {
       "0x" + initialCommitment.toString(16).padStart(64, "0");
 
     // push that to chain
-    await entropy.write.setCommitment([initialCommHex as any], {
-      account: sender.account,
+    const commitmentTxHash = await entropy.write.setCommitment(
+      [initialCommHex as any],
+      {
+        account: sender.account,
+      }
+    );
+
+    await publicClient.waitForTransactionReceipt({
+      hash: commitmentTxHash,
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng(
+      [mockCallBackReceiver.address, 350_000],
+      {
+        value: parseEther("0.000005"),
+        account: otherAccount.account,
+      }
+    );
+    const reqTx2 = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
-    });
-    const reqTx2 = await entropy.write.requestRng({
-      value: parseEther("0.000005"),
+      account: otherAccount.account,
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
       hash: reqTx,
@@ -68,15 +164,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -142,13 +238,20 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(receipt.status).to.equal("success");
 
+    await mine(10);
+    const callbackEntropy = await mockCallBackReceiver.read.latestEntropy();
+    expect(callbackEntropy).to.equal(entropySignal);
+
+    console.log("callback entropy:", callbackEntropy);
+    console.log("entropy sig:", entropySignal);
+
     const fulfillerContractBalance =
       await entropy.read.getRewardReceiverBalance([fulfiller.account.address]);
 
-    const contractFeePercentage = await entropy.read.contractFeePercentage();
+    const contractFeePercentage = await entropy.read.contractFeeBasisPoints();
 
     const requestFee = await entropy.read.requestFee();
-    const fee = (requestFee * contractFeePercentage) / 100n;
+    const fee = (requestFee * contractFeePercentage) / 10_000n;
 
     const expectedFulfillerBalance = requestFee - fee;
 
@@ -184,7 +287,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     // expect the refund of the request to revert
     await expect(
       entropy.write.refundUnfulfilledRequest([requestId], {
-        account: sender.account,
+        account: otherAccount.account,
       })
     ).to.be.rejectedWith("RequestAlreadyFulfilled()");
     // cleanup
@@ -206,7 +309,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     await expect(
-      entropy.write.requestRng({
+      entropy.write.requestRng([zeroAddress, 0], {
         account: sender.account,
         value: parseEther("0.0000001"),
       })
@@ -235,7 +338,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -243,15 +346,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -336,7 +439,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -344,15 +447,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -448,7 +551,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -456,15 +559,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(2);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(2);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -548,7 +651,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -556,15 +659,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -652,7 +755,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -660,15 +763,15 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(reqReceipt.status).to.equal("success");
 
-    // requestId will be 1 (first one)
-    const requestId = BigInt(1);
-
-    // grab the block number when it was mined
+    // Fetch block details using getBlock
     const block = await publicClient.getBlock({
-      blockNumber: reqReceipt.blockNumber! - 1n,
+      blockNumber: reqReceipt.blockNumber - 1n,
     });
     const blockNumber = BigInt(block.number);
     const blockHash = block.hash;
+
+    // requestId will be 1 (first one)
+    const requestId = BigInt(1);
 
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
@@ -748,7 +851,7 @@ describe("FoundnoneVRF full ZK flow", function () {
       "0x" + initialCommitment.toString(16).padStart(64, "0");
 
     // 2) request a VRF
-    const reqTx = await entropy.write.requestRng({
+    const reqTx = await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
     });
     const reqReceipt = await publicClient.waitForTransactionReceipt({
@@ -768,7 +871,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     // 3) recompute the seed = keccak256(requestId, blockNumber) % BN128_PRIME
     const packed = encodeAbiParameters(
       [{ type: "uint256" }, { type: "uint256" }, { type: "bytes32" }],
-      [requestId, reqReceipt.blockNumber, reqReceipt.blockHash]
+      [requestId, reqReceipt.blockNumber - 1n, reqReceipt.blockHash]
     );
     const seedHash = keccak256(packed);
     const seedBig = BigInt(seedHash) % BN128_PRIME;
@@ -839,18 +942,18 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { admin, entropy, sender } = await loadFixture(deployEntropyFixture);
 
     const newFee = parseEther("0.00001");
-    const newFeePercentage = 10n;
+    const newFeePercentage = 1000n;
 
     await entropy.write.setRequestFee([newFee], {
       account: admin.account,
     });
 
-    await entropy.write.setContractFeePercentage([newFeePercentage], {
+    await entropy.write.setContractFeeBasisPoints([newFeePercentage], {
       account: admin.account,
     });
 
     const fee = await entropy.read.requestFee();
-    const feePercentage = await entropy.read.contractFeePercentage();
+    const feePercentage = await entropy.read.contractFeeBasisPoints();
 
     expect(fee).to.equal(newFee);
     expect(feePercentage).to.equal(newFeePercentage);
@@ -863,7 +966,7 @@ describe("FoundnoneVRF full ZK flow", function () {
       })
     ).to.be.rejectedWith("AccessControlUnauthorizedAccount");
     await expect(
-      entropy.write.setContractFeePercentage([newFeePercentage2], {
+      entropy.write.setContractFeeBasisPoints([newFeePercentage2], {
         account: sender.account,
       })
     ).to.be.rejectedWith("AccessControlUnauthorizedAccount");
@@ -888,7 +991,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -904,7 +1007,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -920,7 +1023,7 @@ describe("FoundnoneVRF full ZK flow", function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -930,13 +1033,13 @@ describe("FoundnoneVRF full ZK flow", function () {
       entropy.write.refundUnfulfilledRequest([2n], {
         account: sender.account,
       })
-    ).to.be.rejectedWith("InvalidRequestId()");
+    ).to.be.rejectedWith("InvalidRequester()");
   });
   it("should not allow the refund of a request if the block hash is available", async function () {
     const { entropy, sender, admin } = await loadFixture(deployEntropyFixture);
 
     // 2) request a VRF
-    await entropy.write.requestRng({
+    await entropy.write.requestRng([zeroAddress, 0], {
       value: parseEther("0.000005"),
       account: sender.account,
     });
@@ -951,18 +1054,17 @@ describe("FoundnoneVRF full ZK flow", function () {
   it("should not allow the admin to set the fee to 20% or more", async function () {
     const { admin, entropy } = await loadFixture(deployEntropyFixture);
 
-    const newFeePercentage = 21n;
+    const newFeePercentage = 2100n;
 
     await expect(
-      entropy.write.setContractFeePercentage([newFeePercentage], {
+      entropy.write.setContractFeeBasisPoints([newFeePercentage], {
         account: admin.account,
       })
-    ).to.be.rejectedWith("InvalidFeePercentage()");
+    ).to.be.rejectedWith("InvalidFeeBasisPoints()");
   });
   it("does not allow two fulfillers to use the same commitment", async function () {
-    const { fulfiller, sender, entropy } = await loadFixture(
-      deployEntropyFixture
-    );
+    const { fulfiller, sender, entropy } =
+      await loadFixture(deployEntropyFixture);
     const secret = BigInt(123456);
     const zero = poseidon.F.e(0);
     const commField = poseidon([poseidon.F.e(secret), zero]);
@@ -998,5 +1100,13 @@ describe("FoundnoneVRF full ZK flow", function () {
     });
     expect(await entropy.read.commitmentInUse([initialCommHex as any])).to.be
       .false;
+  });
+
+  it("should reject invalid withdrawal attempts", async function () {
+    const { sender, entropy } = await loadFixture(deployEntropyFixture);
+
+    await expect(
+      entropy.write.withdrawRewardReceiverBalance({ account: sender.account })
+    ).to.be.rejectedWith("InsufficientBalance()");
   });
 });

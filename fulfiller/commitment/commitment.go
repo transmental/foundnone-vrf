@@ -3,6 +3,7 @@ package commitment
 import (
 	"crypto/rand"
 	"encoding/json"
+	"log"
 	"math/big"
 	"os"
 
@@ -11,7 +12,7 @@ import (
 
 var (
 	BN128FieldPrime, _ = new(big.Int).SetString(
-		"21888242871839275222246405745257275088548364400416034343698204186575808495617", 10,
+		"21888242871839275222246405745257275088548364400416034343698204186575808495617", 0,
 	)
 )
 
@@ -32,6 +33,7 @@ func Generate() (*big.Int, *big.Int, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Printf("generated commitment: %s", comm)
 	return s, comm, nil
 }
 

@@ -13,6 +13,7 @@ app.post("/prove", async (req, res) => {
   const startTime = Date.now();
   try {
     const input = req.body;
+    console.log("Received input for proof generation:", input);
     const { proof, publicSignals } = await plonk.fullProve(input, wasm, zkey);
 
     const rawCalldata = await plonk.exportSolidityCallData(
@@ -45,4 +46,4 @@ app.post("/prove", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Snarkjs prover listening on port 3000"));
+app.listen(3001, () => console.log("Snarkjs prover listening on port 3001"));
