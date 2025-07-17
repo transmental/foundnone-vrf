@@ -10,6 +10,7 @@ import { wordlists } from 'bip39'
 export default function Home() {
   const IS_PROD = process.env.NEXT_PUBLIC_ENV === 'production'
   const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x6011C31271b321FcE089FB898ecd487BA96CC73f'
+  const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
   const [rand, setRand] = useState<string | null>(null)
@@ -58,7 +59,9 @@ export default function Home() {
 
   const publicClient = createPublicClient({
     chain: IS_PROD ? base : baseSepolia,
-    transport: http(),
+    transport: http(
+      RPC_URL ? RPC_URL : ''
+    ),
   })
 
   useEffect(() => {
