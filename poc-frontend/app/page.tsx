@@ -8,7 +8,7 @@ import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
 
 export default function Home() {
-  const IS_PROD = process.env.NODE_ENV === 'production'
+  const IS_PROD = process.env.NEXT_PUBLIC_ENV === 'production'
   const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x6011C31271b321FcE089FB898ecd487BA96CC73f'
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
@@ -232,7 +232,7 @@ export default function Home() {
           <p className="text-sm">A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.</p>
           <p className="text-sm">
             {IS_PROD ? 'This is a production implementation on BASE with contract address:' : 'This is a test implementation on BASE SEPOLIA with contract address:'}
-            <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
+            <a href={`https://${IS_PROD ? '' : 'sepolia.'}basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
           </p>
           <p className="text-sm">
             Codebase:
