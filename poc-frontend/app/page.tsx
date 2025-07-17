@@ -103,11 +103,36 @@ export default function Home() {
         params: [{ eth_accounts: {} }],
       })
     }
-
-    await provider.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${IS_PROD ? base.id.toString(16) : baseSepolia.id.toString(16)}` }],
-    })
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${IS_PROD ? base.id.toString(16) : baseSepolia.id.toString(16)}` }],
+      })
+    } catch (error: any) {
+      if (error.code === 4902) {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${IS_PROD ? base.id.toString(16) : baseSepolia.id.toString(16)}`,
+            chainName: IS_PROD ? 'BASE Mainnet' : 'BASE Sepolia Testnet',
+            rpcUrls: [(IS_PROD ? 'https://base.gateway.tenderly.co' : 'https://base-sepolia.gateway.tenderly.co')],
+            blockExplorerUrls: [IS_PROD ? 'https://basescan.org' : 'https://sepolia.basescan.org'],
+            nativeCurrency: {
+              name: IS_PROD ? 'Base' : 'Base Sepolia',
+              symbol: IS_PROD ? 'ETH' : 'ETH',
+              decimals: 18,
+            },
+          }],
+        })
+      } else if (error.code === 4001) {
+        appendTerminalOutput('User rejected the request to switch networks.')
+        return
+      } else {
+        console.error('Error switching network:', error)
+        appendTerminalOutput('Error switching network. Make sure you are connected to' + (IS_PROD ? ' BASE mainnet.' : ' BASE Sepolia testnet.'))
+        return
+      }
+    }
 
     const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' })
     const acc = accounts[0] as `0x${string}`
