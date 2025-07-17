@@ -232,7 +232,7 @@ export default function Home() {
           <p className="text-sm">A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.</p>
           <p className="text-sm">
             {IS_PROD ? 'This is a production implementation on BASE with contract address:' : 'This is a test implementation on BASE SEPOLIA with contract address:'}
-            <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
+            <a href={`https://${IS_PROD ? '' : 'sepolia.'}basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
           </p>
           <p className="text-sm">
             Codebase:
