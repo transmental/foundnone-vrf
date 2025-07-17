@@ -154,7 +154,7 @@ Important: you must run a Postgres database and have AWS KMS configured with the
    - **Key Functions**:
      - **deriveAddressFromKMS**: Fetches the public key from AWS KMS and computes the Ethereum address.
      - **SignerFn**: Signs transactions using AWS KMS and computes the recovery ID (`V`) to produce a valid Ethereum signature.
-     - **GatherFunds**: (Placeholder) Sweeps all ETH from the KMS account to a specified address.
+     - **GatherFunds**: Sweeps all ETH from the KMS account to a specified address.
 
 3. **Transaction Signing**:
    - Transactions are signed using AWS KMS, ensuring that private keys never leave the secure KMS environment.
@@ -291,6 +291,62 @@ npx hardhat test
 
 Go to the contract address you have made fulfillments on, and call the `withdrawRewardReceiverBalance` function from the address that you set as the `PAYOUT_ADDRESS` in your `.env` file.
 This will transfer the rewards to that address.
+
+## CLI Commands
+
+The Foundnone VRF project includes CLI commands for managing KMS-backed accounts and collecting fees. Below are the available commands:
+
+### Gather
+
+Sweep KMS balances and transfer them to a specified address.
+
+#### Usage
+
+```bash
+./fulfiller -gather -db <Postgres DSN> -rpc <Ethereum RPC URL> -chain <Chain ID> -threshold <Minimum ETH balance to sweep> -to <Destination address> -kms_key <KMS Key> -kms_region <KMS Region>
+```
+
+#### Parameters
+
+- `-db`: Postgres DSN for connecting to the database.
+- `-rpc`: Ethereum RPC URL.
+- `-chain`: Chain ID for transactions.
+- `-threshold`: Minimum ETH balance to sweep (in ETH).
+- `-to`: Destination address for transferring funds.
+- `-kms_key`: AWS KMS Key ID.
+- `-kms_region`: AWS KMS Region.
+
+### CollectFees
+
+Collect VRF request fulfillment earnings.
+
+#### Usage
+
+```bash
+./fulfiller -collect -key <Private Key> -address <Contract Address> -chain_id <Chain ID> -rpc_url <Ethereum RPC URL>
+```
+
+#### Parameters
+
+- `-key`: Private key for collecting fees.
+- `-address`: Contract address to collect fees from.
+- `-chain_id`: Chain ID for transactions.
+- `-rpc_url`: Ethereum RPC URL for the specified chain.
+
+### Example
+
+To sweep balances:
+
+```bash
+./fulfiller -gather -db "postgres://user:password@localhost:5432/dbname" -rpc "https://mainnet.infura.io/v3/YOUR_PROJECT_ID" -chain 1 -threshold 0.01 -to "0xYourDestinationAddress" -kms_key "YourKMSKey" -kms_region "us-east-1"
+```
+
+To collect fees:
+
+```bash
+./fulfiller -collect -key "YourPrivateKey" -address "0xYourContractAddress" -chain_id 1 -rpc_url "https://mainnet.infura.io/v3/YOUR_PROJECT_ID"
+```
+
 
 ## Contributing
 
