@@ -258,7 +258,7 @@ func bootstrapPoolAccounts(
 		}
 		want := new(big.Int)
 		want.SetString(slot.Commitment, 0)
-		if onChain.Cmp(want) != 0 {
+		if onChain.String() != want.String() {
 			poolAuth, _ := bind.NewKeyedTransactorWithChainID(keyMap[slot.Address], big.NewInt(cfg.ChainID))
 			newSecret, newComm, err := commitment.Generate()
 			if err != nil {
