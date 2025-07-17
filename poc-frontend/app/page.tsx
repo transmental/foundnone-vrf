@@ -3,11 +3,12 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { createPublicClient, createWalletClient, custom, fallback, http, parseEventLogs, WalletClient, webSocket, zeroAddress } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { baseSepolia, base } from 'viem/chains'
 import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
 
 export default function Home() {
+  const IS_PROD = process.env.NODE_ENV === 'production'
   const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x6011C31271b321FcE089FB898ecd487BA96CC73f'
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
@@ -18,10 +19,8 @@ export default function Home() {
   const [initializing, setInitializing] = useState(true)
   const [terminalInput, setTerminalInput] = useState<string>('')
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
-  const [logsActive, setLogsActive] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
-  const watcherRef = useRef<() => void | null>(null)
 
   useEffect(() => {
     const terminal = document.getElementById('terminal')
@@ -31,7 +30,6 @@ export default function Home() {
   }, [terminalOutput])
 
   useEffect(() => {
-    // just capture any keypresses and focus the input
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'c' || e.key === 'r' || e.key === 'b' || e.key === 'l') {
         e.preventDefault()
@@ -59,104 +57,9 @@ export default function Home() {
   )
 
   const publicClient = createPublicClient({
-    chain: baseSepolia,
+    chain: IS_PROD ? base : baseSepolia,
     transport: http(),
   })
-
-  // const websocketClient = createPublicClient({
-  //   chain: baseSepolia,
-  //   transport: fallback([
-  //     webSocket('wss://base-sepolia.drpc.org'),
-  //     webSocket('wss://base-sepolia-rpc.publicnode.com')
-  //   ])
-  // })
-
-  // const handleLogStream = () => {
-  //   if (watcherRef.current) {
-  //     console.log('Log stream already active.')
-  //     return
-  //   }
-
-  //   appendTerminalOutput('Log streaming enabled.')
-  //   setLogsActive(true)
-
-  //   const unwatch = websocketClient.watchEvent({
-  //     address: CONTRACT_ADDRESS,
-  //     onLogs: (logs) => {
-  //       console.log(logs)
-  //       handleLogs(logs)
-  //     },
-  //     onError: (e) => {
-  //       console.error('Log stream error:', e)
-  //       appendTerminalOutput('Log stream disconnected.')
-  //       setLogsActive(false)
-
-  //       if (watcherRef.current) {
-  //         watcherRef.current()
-  //         watcherRef.current = null
-  //       }
-  //     }
-  //   })
-
-  //   watcherRef.current = unwatch
-  // }
-
-  // const stopLogStream = () => {
-  //   if (watcherRef.current) {
-  //     watcherRef.current()
-  //     watcherRef.current = null
-  //     appendTerminalOutput('Log streaming disabled.')
-  //     setLogsActive(false)
-  //   }
-  // }
-
-
-  // useEffect(() => {
-  //   handleLogStream()
-
-  //   return () => {
-  //     if (watcherRef.current) {
-  //       watcherRef.current()
-  //       watcherRef.current = null
-  //     }
-  //     setLogsActive(false)
-  //   }
-  // }, [])
-
-
-  // const handleLogs = async (event: any) => {
-  //   const parsedLogs = parseEventLogs({
-  //     logs: event,
-  //     abi: foundnoneVrfAbi,
-  //   }) as any;
-
-  //   console.log('Parsed logs:', parsedLogs)
-
-  //   const name = parsedLogs[0].eventName
-  //   const args = parsedLogs[0].args
-
-  //   console.log({ name, args })
-  //   switch (name) {
-  //     case 'RngRequested': {
-  //       const requestId = args.requestId
-  //       appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
-  //       break;
-  //     }
-  //     case 'RequestFulfilled':
-  //       {
-  //         const requestId = args.requestId
-  //         const proof = args.proof
-  //         const publicInputs = args.publicInputs
-  //         appendTerminalOutput(`RNG fulfilled for request ID: ${requestId}`)
-  //         appendTerminalOutput(`Entropy: ${publicInputs[1]}`)
-  //         appendTerminalOutput(`Proof: ${proof}`)
-  //         appendTerminalOutput(`Public Inputs: ${publicInputs}`)
-  //         break;
-  //       }
-  //     default:
-  //       break
-  //   }
-  // }
 
   useEffect(() => {
     if (client) {
@@ -200,7 +103,7 @@ export default function Home() {
 
     await provider.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${baseSepolia.id.toString(16)}` }],
+      params: [{ chainId: `0x${IS_PROD ? base.id.toString(16) : baseSepolia.id.toString(16)}` }],
     })
 
     const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' })
@@ -209,7 +112,7 @@ export default function Home() {
 
     const walletClient = createWalletClient({
       transport: custom((window as any).ethereum),
-      chain: baseSepolia,
+      chain: IS_PROD ? base : baseSepolia,
       account: acc,
     })
     setClient(walletClient)
@@ -231,7 +134,7 @@ export default function Home() {
       const hash = await client.writeContract({
         account,
         address: CONTRACT_ADDRESS,
-        chain: baseSepolia,
+        chain: IS_PROD ? base : baseSepolia,
         abi: foundnoneVrfAbi,
         functionName: 'requestRng',
         value: vrfFee as any,
@@ -247,10 +150,8 @@ export default function Home() {
         eventName: 'RngRequested',
       })[0] as any
       const requestId = parsedLogs.args.requestId
-      if (!logsActive) {
-        appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
-        await pullForEntropy(requestId)
-      }
+      appendTerminalOutput(`RNG requested. Request ID: ${requestId}`)
+      await pullForEntropy(requestId)
     } catch (error) {
       console.error('Error requesting RNG:', error)
       appendTerminalOutput('Error requesting RNG.')
@@ -260,7 +161,6 @@ export default function Home() {
   }
 
   async function pullForEntropy(requestId: string) {
-    if (logsActive) return;
     await new Promise(resolve => setTimeout(resolve, 3000))
     let tries = 0
     while (tries < 10) {
@@ -318,12 +218,6 @@ export default function Home() {
       }
     } else if (input === 'clear') {
       setTerminalOutput([])
-      // } else if (input === 'logs') {
-      //   if (logsActive) {
-      //     stopLogStream()
-      //   } else {
-      //     handleLogStream()
-      //   }
     } else {
       appendTerminalOutput('Use "connect" to connect your wallet, "rng" to request a random number.')
     }
@@ -337,7 +231,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold mb-2">Foundnone VRF</h1>
           <p className="text-sm">A democratized VRF allowing anyone to request and fulfill entropy requests onchain for rewards on Ethereum.</p>
           <p className="text-sm">
-            This is a test implementation on BASE SEPOLIA with contract address:
+            {IS_PROD ? 'This is a production implementation on BASE with contract address:' : 'This is a test implementation on BASE SEPOLIA with contract address:'}
             <a href={`https://sepolia.basescan.org/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{CONTRACT_ADDRESS}</a>
           </p>
           <p className="text-sm">
@@ -347,6 +241,10 @@ export default function Home() {
           <p className="text-sm">
             Connect with me:
             <a href={`https://x.com/transmental`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://x.com/transmental`}</a>
+          </p>
+          <p className="text-sm">
+            Join the Foundnone Research discord:
+            <a href={`https://discord.gg/5EGw6szwQp`} target="_blank" rel="noreferrer" className='text-sm underline inline-block ml-1'>{`https://discord.gg/5EGw6szwQp`}</a>
           </p>
         </div>
         <div className="flex-1 overflow-y-auto space-y-1 no-scrollbar scroll-auto border-t-1 border-x-1 px-1 border-green-400" id="terminal">
