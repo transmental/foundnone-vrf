@@ -8,7 +8,7 @@ import foundnoneVrfAbi from './abi/foundnone-vrf.json'
 import { wordlists } from 'bip39'
 
 export default function Home() {
-  const IS_PROD = process.env.NODE_ENV === 'production'
+  const IS_PROD = process.env.NEXT_PUBLIC_ENV === 'production'
   const CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS as `0x${string}` || '0x6011C31271b321FcE089FB898ecd487BA96CC73f'
   const [client, setClient] = useState<WalletClient | null>(null)
   const [account, setAccount] = useState<`0x${string}`>()
