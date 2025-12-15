@@ -385,15 +385,49 @@ func subscribeLoop(
 
 	relayLimiter := make(chan struct{}, cfg.RelayerConcurrencyLimit)
 
+	// Keep-alive ticker to detect dead connections
+	keepAliveTicker := time.NewTicker(30 * time.Second)
+	defer keepAliveTicker.Stop()
+
 	for {
 		select {
+		case <-keepAliveTicker.C:
+			// Ping the connection to detect if it's still alive
+			_, err := ws.BlockNumber(ctx)
+			if err != nil {
+				log.Printf("⚠️ keep-alive check failed: %v - triggering reconnect", err)
+				sub.Unsubscribe()
+				// Reconnect WebSocket
+				newWs, err := ethclient.Dial(cfg.WSRPCURL)
+				if err != nil {
+					log.Printf("❌ failed to redial WebSocket: %v", err)
+					continue
+				}
+				ws = newWs
+				newSub, err := ws.SubscribeFilterLogs(ctx, query, logs)
+				if err != nil {
+					log.Printf("❌ failed to resubscribe: %v", err)
+					continue
+				}
+				sub = newSub
+				log.Println("✅ reconnected WebSocket and resubscribed")
+			}
+
 		case subErr := <-sub.Err():
 			log.Printf("subscription error: %v", subErr)
 			sub.Unsubscribe()
 
+			// Redial WebSocket client on subscription error
 			var newSub ethereum.Subscription
 			for i := 1; i <= cfg.ConnectionRetries; i++ {
 				log.Printf("reconnect attempt %d/%d…", i, cfg.ConnectionRetries)
+				newWs, dialErr := ethclient.Dial(cfg.WSRPCURL)
+				if dialErr != nil {
+					log.Printf("dial failed: %v", dialErr)
+					time.Sleep(time.Second)
+					continue
+				}
+				ws = newWs
 				newSub, err = ws.SubscribeFilterLogs(ctx, query, logs)
 				if err != nil {
 					log.Printf("subscribe failed: %v", err)
@@ -409,11 +443,15 @@ func subscribeLoop(
 			}
 
 		case vLog := <-logs:
+			log.Printf("📥 received log: block=%d txHash=%s topic0=%s", vLog.BlockNumber, vLog.TxHash.Hex(), vLog.Topics[0].Hex())
 			event, err := contract.ParseRngRequested(vLog)
 			if err != nil {
+				log.Printf("⚠️ failed to parse RngRequested: %v (topic0: %s)", err, vLog.Topics[0].Hex())
 				continue
 			}
+			log.Printf("✅ parsed RngRequested: requestId=%s callback=%s gasLimit=%d", event.RequestId, event.CallbackAddress.Hex(), event.CallbackGasLimit)
 			if !checkCallbackAddressAndGasLimit(event.CallbackAddress, event.CallbackGasLimit, cfg.WhitelistedCallbackAddresses, cfg.MaxCallbackGasLimit) {
+				log.Printf("⚠️ skipping event: callback check failed for %s with gas %d", event.CallbackAddress.Hex(), event.CallbackGasLimit)
 				continue
 			}
 			if cfg.WalletMode == config.WalletModeKMS {
