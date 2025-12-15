@@ -385,6 +385,8 @@ func subscribeLoop(
 
 	relayLimiter := make(chan struct{}, cfg.RelayerConcurrencyLimit)
 
+	log.Printf("✅ subscription created successfully, entering event loop...")
+
 	// Keep-alive ticker to detect dead connections
 	keepAliveTicker := time.NewTicker(30 * time.Second)
 	defer keepAliveTicker.Stop()
@@ -393,7 +395,7 @@ func subscribeLoop(
 		select {
 		case <-keepAliveTicker.C:
 			// Ping the connection to detect if it's still alive
-			_, err := ws.BlockNumber(ctx)
+			blockNum, err := ws.BlockNumber(ctx)
 			if err != nil {
 				log.Printf("⚠️ keep-alive check failed: %v - triggering reconnect", err)
 				sub.Unsubscribe()
@@ -411,6 +413,8 @@ func subscribeLoop(
 				}
 				sub = newSub
 				log.Println("✅ reconnected WebSocket and resubscribed")
+			} else {
+				log.Printf("💓 keep-alive OK, block=%d, waiting for events...", blockNum)
 			}
 
 		case subErr := <-sub.Err():
