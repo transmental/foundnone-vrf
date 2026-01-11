@@ -106,7 +106,16 @@ func run(ctx context.Context) error {
 		}
 	}
 
-	// 6. Hand off to the event subscription loop
+	// 6. Hand off to the event loop - use HTTP polling if configured (more reliable for testnets)
+	if cfg.UseHTTPPolling {
+		log.Println("📡 Using HTTP polling mode (recommended for testnets)")
+		return pollingLoop(
+			ctx, httpc,
+			auth, contract,
+			secret, comm,
+			cfg, pool, signerFn,
+		)
+	}
 	return subscribeLoop(
 		ctx, ws, httpc,
 		auth, contract,
@@ -362,6 +371,111 @@ func ensureCommitment(ctx context.Context, httpc *ethclient.Client, auth *bind.T
 	}
 }
 
+// pollingLoop uses HTTP polling instead of WebSocket subscriptions.
+// This is more reliable for testnets with low event frequency where
+// WebSocket connections may be killed by load balancer idle timeouts.
+func pollingLoop(
+	ctx context.Context,
+	httpc *ethclient.Client,
+	auth *bind.TransactOpts,
+	contract *abi.Abi,
+	secret, comm *big.Int,
+	cfg config.Config,
+	pool *kmswallet.AccountPool,
+	signerFn func(*big.Int) bind.SignerFn,
+) error {
+	contractAddr := common.HexToAddress(cfg.ContractAddress)
+	relayLimiter := make(chan struct{}, cfg.RelayerConcurrencyLimit)
+
+	// Get current block as starting point
+	lastProcessedBlock, err := httpc.BlockNumber(ctx)
+	if err != nil {
+		return fmt.Errorf("get initial block number: %w", err)
+	}
+	log.Printf("📍 Starting HTTP polling from block %d (interval: %ds)", lastProcessedBlock, cfg.PollingIntervalSeconds)
+
+	// Track processed tx hashes to avoid duplicates
+	processedTxs := make(map[common.Hash]bool)
+
+	ticker := time.NewTicker(time.Duration(cfg.PollingIntervalSeconds) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			currentBlock, err := httpc.BlockNumber(ctx)
+			if err != nil {
+				log.Printf("⚠️ failed to get block number: %v", err)
+				continue
+			}
+
+			if currentBlock <= lastProcessedBlock {
+				continue
+			}
+
+			query := ethereum.FilterQuery{
+				Addresses: []common.Address{contractAddr},
+				FromBlock: big.NewInt(int64(lastProcessedBlock + 1)),
+				ToBlock:   big.NewInt(int64(currentBlock)),
+			}
+
+			logs, err := httpc.FilterLogs(ctx, query)
+			if err != nil {
+				log.Printf("⚠️ failed to filter logs: %v", err)
+				continue
+			}
+
+			for _, vLog := range logs {
+				// Skip already processed transactions
+				if processedTxs[vLog.TxHash] {
+					continue
+				}
+				processedTxs[vLog.TxHash] = true
+
+				log.Printf("📥 received log: block=%d txHash=%s topic0=%s", vLog.BlockNumber, vLog.TxHash.Hex(), vLog.Topics[0].Hex())
+				event, err := contract.ParseRngRequested(vLog)
+				if err != nil {
+					log.Printf("⚠️ failed to parse RngRequested: %v (topic0: %s)", err, vLog.Topics[0].Hex())
+					continue
+				}
+				log.Printf("✅ parsed RngRequested: requestId=%s callback=%s gasLimit=%d", event.RequestId, event.CallbackAddress.Hex(), event.CallbackGasLimit)
+				if !checkCallbackAddressAndGasLimit(event.CallbackAddress, event.CallbackGasLimit, cfg.WhitelistedCallbackAddresses, cfg.MaxCallbackGasLimit) {
+					log.Printf("⚠️ skipping event: callback check failed for %s with gas %d", event.CallbackAddress.Hex(), event.CallbackGasLimit)
+					continue
+				}
+				if cfg.WalletMode == config.WalletModeKMS {
+					go func(event *abi.AbiRngRequested) {
+						err := handler.HandleEventWithPool(
+							ctx, httpc, contract, pool, signerFn, event,
+							common.HexToAddress(cfg.PayoutAddress),
+							common.HexToAddress(cfg.ContractAddress),
+							cfg.ChainID, auth, httpc,
+							cfg.PoolMinGasWei, cfg.PoolRefillAmountWei,
+						)
+						if err != nil {
+							log.Printf("HandleEventWithPool error: %v", err)
+						}
+					}(event)
+				} else {
+					if err := handler.HandleEvent(ctx, httpc, contract, auth, event, secret, comm, common.HexToAddress(cfg.PayoutAddress), common.HexToAddress(cfg.ContractAddress), cfg.RelayerURL, relayLimiter, cfg.ChainID); err != nil {
+						log.Printf("HandleEvent error: %v", err)
+					}
+				}
+			}
+
+			lastProcessedBlock = currentBlock
+			log.Printf("💓 polled up to block %d, found %d logs", currentBlock, len(logs))
+
+			// Prune old tx hashes to prevent memory growth (keep last 1000)
+			if len(processedTxs) > 1000 {
+				processedTxs = make(map[common.Hash]bool)
+			}
+		}
+	}
+}
+
 func subscribeLoop(
 	ctx context.Context,
 	ws *ethclient.Client,
@@ -373,9 +487,18 @@ func subscribeLoop(
 	pool *kmswallet.AccountPool,
 	signerFn func(*big.Int) bind.SignerFn,
 ) error {
+	contractAddr := common.HexToAddress(cfg.ContractAddress)
+	
+	// Track last processed block for backfill after reconnection
+	lastProcessedBlock, err := httpc.BlockNumber(ctx)
+	if err != nil {
+		return fmt.Errorf("get initial block number: %w", err)
+	}
+	log.Printf("📍 starting from block %d", lastProcessedBlock)
+
 	// Use config fields instead of removed variables
-	query := ethereum.FilterQuery{Addresses: []common.Address{common.HexToAddress(cfg.ContractAddress)}, ToBlock: nil}
-	logs := make(chan types.Log)
+	query := ethereum.FilterQuery{Addresses: []common.Address{contractAddr}, ToBlock: nil}
+	logs := make(chan types.Log, 100) // Buffered channel to prevent blocking
 	sub, err := ws.SubscribeFilterLogs(ctx, query, logs)
 	if err != nil {
 		return fmt.Errorf("subscribe logs: %w", err)
@@ -386,9 +509,31 @@ func subscribeLoop(
 	relayLimiter := make(chan struct{}, cfg.RelayerConcurrencyLimit)
 
 	log.Printf("✅ subscription created successfully, entering event loop...")
+	
+	// Helper to backfill missed events
+	backfillEvents := func(fromBlock, toBlock uint64) {
+		if fromBlock >= toBlock {
+			return
+		}
+		log.Printf("🔄 backfilling events from block %d to %d", fromBlock, toBlock)
+		backfillQuery := ethereum.FilterQuery{
+			Addresses: []common.Address{contractAddr},
+			FromBlock: big.NewInt(int64(fromBlock)),
+			ToBlock:   big.NewInt(int64(toBlock)),
+		}
+		historicalLogs, err := httpc.FilterLogs(ctx, backfillQuery)
+		if err != nil {
+			log.Printf("⚠️ backfill failed: %v", err)
+			return
+		}
+		log.Printf("📥 found %d historical logs to process", len(historicalLogs))
+		for _, vLog := range historicalLogs {
+			logs <- vLog
+		}
+	}
 
-	// Keep-alive ticker to detect dead connections
-	keepAliveTicker := time.NewTicker(30 * time.Second)
+	// Keep-alive ticker to detect dead connections - reduced to 15s for faster detection
+	keepAliveTicker := time.NewTicker(15 * time.Second)
 	defer keepAliveTicker.Stop()
 
 	for {
@@ -398,6 +543,7 @@ func subscribeLoop(
 			blockNum, err := ws.BlockNumber(ctx)
 			if err != nil {
 				log.Printf("⚠️ keep-alive check failed: %v - triggering reconnect", err)
+				disconnectBlock := lastProcessedBlock
 				sub.Unsubscribe()
 				// Reconnect WebSocket
 				newWs, err := ethclient.Dial(cfg.WSRPCURL)
@@ -413,12 +559,18 @@ func subscribeLoop(
 				}
 				sub = newSub
 				log.Println("✅ reconnected WebSocket and resubscribed")
+				// Backfill any missed events during disconnection
+				currentBlock, _ := httpc.BlockNumber(ctx)
+				go backfillEvents(disconnectBlock, currentBlock)
+				lastProcessedBlock = currentBlock
 			} else {
 				log.Printf("💓 keep-alive OK, block=%d, waiting for events...", blockNum)
+				lastProcessedBlock = blockNum
 			}
 
 		case subErr := <-sub.Err():
 			log.Printf("subscription error: %v", subErr)
+			disconnectBlock := lastProcessedBlock
 			sub.Unsubscribe()
 
 			// Redial WebSocket client on subscription error
@@ -440,6 +592,10 @@ func subscribeLoop(
 				}
 				log.Println("reconnected & resubscribed")
 				sub = newSub
+				// Backfill any missed events during disconnection
+				currentBlock, _ := httpc.BlockNumber(ctx)
+				go backfillEvents(disconnectBlock, currentBlock)
+				lastProcessedBlock = currentBlock
 				break
 			}
 			if sub == nil {
@@ -447,6 +603,10 @@ func subscribeLoop(
 			}
 
 		case vLog := <-logs:
+			// Update last processed block
+			if vLog.BlockNumber > lastProcessedBlock {
+				lastProcessedBlock = vLog.BlockNumber
+			}
 			log.Printf("📥 received log: block=%d txHash=%s topic0=%s", vLog.BlockNumber, vLog.TxHash.Hex(), vLog.Topics[0].Hex())
 			event, err := contract.ParseRngRequested(vLog)
 			if err != nil {

@@ -41,6 +41,8 @@ type Config struct {
 	PoolMinGasWei                *big.Int // new: min gas threshold for pool accounts
 	PoolRefillAmountWei          *big.Int // new: refill amount for pool accounts
 	PGConnString                 string   // Postgres connection string for KMS wallet
+	UseHTTPPolling               bool     // Use HTTP polling instead of WebSocket (more reliable for testnets)
+	PollingIntervalSeconds       int      // Polling interval in seconds (default 2)
 }
 
 func LoadConfig() (Config, error) {
@@ -106,6 +108,17 @@ func LoadConfig() (Config, error) {
 		}
 	}
 
+	useHTTPPolling := false
+	if v := os.Getenv("USE_HTTP_POLLING"); v == "true" || v == "1" {
+		useHTTPPolling = true
+	}
+	pollingIntervalSeconds := 2
+	if v := os.Getenv("POLLING_INTERVAL_SECONDS"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			pollingIntervalSeconds = p
+		}
+	}
+
 	cfg := Config{
 		WSRPCURL:                     os.Getenv("WS_RPC_URL"),
 		HTTPRPCURL:                   os.Getenv("HTTP_RPC_URL"),
@@ -125,6 +138,8 @@ func LoadConfig() (Config, error) {
 		MaxAccounts:                  maxAccounts,
 		PoolMinGasWei:                poolMinGasWei,
 		PoolRefillAmountWei:          poolRefillAmountWei,
+		UseHTTPPolling:               useHTTPPolling,
+		PollingIntervalSeconds:       pollingIntervalSeconds,
 	}
 	if cfg.WSRPCURL == "" || cfg.HTTPRPCURL == "" || cfg.ContractAddress == "" ||
 		cfg.FulfillerPK == "" || cfg.PayoutAddress == "" {
